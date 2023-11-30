@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        repository: JCSDA/spack-stack
-        submodules: true
-        ref: 1.5.1
+        with:
+          repository: JCSDA/spack-stack
+          submodules: true
+          ref: 1.5.1
