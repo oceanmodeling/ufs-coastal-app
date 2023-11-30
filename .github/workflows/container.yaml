@@ -1,0 +1,15 @@
+name: Create Docker Container
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create:
+    name: Create Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        repository: JCSDA/spack-stack
+        submodules: true
+        ref: 1.5.1
