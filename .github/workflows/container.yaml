@@ -8,9 +8,18 @@ jobs:
     name: Create Dockerfile
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Spack-stack
         uses: actions/checkout@v4
         with:
           repository: JCSDA/spack-stack
           submodules: true
           ref: 1.5.1
+
+      - name: Create Docker File
+        run: |
+          export SPACK_ROOT=${{ github.workspace }}/spack-stack/spack
+          source setup.sh
+          spack stack create ctr --container=docker-ubuntu-gcc-openmpi --template=ufs-weather-model
+          cd ${{ github.workspace }}/spack-stack/envs/docker-ubuntu-gcc-openmpi
+          spack containerize > Dockerfile
+          cat Dockerfile 
