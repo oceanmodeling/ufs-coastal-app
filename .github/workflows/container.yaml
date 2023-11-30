@@ -20,7 +20,7 @@ jobs:
           export SPACK_ROOT=${{ github.workspace }}/spack-stack/spack
           source setup.sh
           spack stack create ctr --name=ufs-coastal-app --template=ufs-weather-model docker-ubuntu-gcc-openmpi
-          cd ${{ github.workspace }}/spack-stack/envs/ufs-coastal-app
+          cd envs/ufs-coastal-app
           spack containerize > Dockerfile
           cat Dockerfile 
 
