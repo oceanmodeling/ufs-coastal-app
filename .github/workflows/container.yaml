@@ -23,6 +23,8 @@ jobs:
           cd envs/ufs-coastal-app
           spack containerize > Dockerfile
           cat Dockerfile 
+          echo $PATH
+          echo ${{ github.workspace }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -39,6 +41,6 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: ${{ github.workspace }}/spack-stack/envs/ufs-coastal-app
+          context: envs/ufs-coastal-app
           push: true
           tags: turuncu/ufs-coastal-app:latest
