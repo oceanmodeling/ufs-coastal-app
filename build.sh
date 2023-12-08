@@ -10,7 +10,7 @@ OPTIONS
       weather model application to build; for example, ATMAQ for Online-CMAQ
       (e.g. CSTLS)
   --bin-dir=BIN_DIR
-      installation binary directory name ("exec" by default; any name is available)
+      installation binary directory name ("bin" by default; any name is available)
   -b, --build-dir=BUILD_DIR
       build directory
   --build-jobs=BUILD_JOBS
@@ -18,6 +18,8 @@ OPTIONS
   --build-type=BUILD_TYPE
       build type; defaults to RELEASE
       (e.g. DEBUG | RELEASE | RELWITHDEBINFO)
+  --clean
+      does a "make clean"
   -c, --compiler=COMPILER
       compiler to use; default depends on platform
       (e.g. intel | gnu)
@@ -28,6 +30,8 @@ OPTIONS
   -p, --platform=PLATFORM
       name of machine you are building on
       (e.g. cheyenne | hera | jet | orion | wcoss2)
+  --remove
+      removes existing build
   -v, --verbose
       build with verbose output
 
@@ -60,15 +64,17 @@ settings () {
 cat << EOF_SETTINGS
 Settings:
 
-  APP_DIR=${APP_DIR}
-  BUILD_DIR=${BUILD_DIR}
-  INSTALL_DIR=${INSTALL_DIR}
-  BIN_DIR=${BIN_DIR}
-  PLATFORM=${PLATFORM}
-  COMPILER=${COMPILER}
   APP=${APPLICATION}
-  BUILD_TYPE=${BUILD_TYPE}
+  APP_DIR=${APP_DIR}
+  BIN_DIR=${BIN_DIR}
+  BUILD_DIR=${BUILD_DIR}
   BUILD_JOBS=${BUILD_JOBS}
+  BUILD_TYPE=${BUILD_TYPE}
+  CLEAN=${CLEAN}
+  COMPILER=${COMPILER}
+  INSTALL_DIR=${INSTALL_DIR}
+  PLATFORM=${PLATFORM}
+  REMOVE=${REMOVE}
   VERBOSE=${VERBOSE}
 
 EOF_SETTINGS
@@ -82,12 +88,14 @@ fi
 
 # default settings
 APP_DIR=$(cd "$(dirname "$(readlink -f -n "${BASH_SOURCE[0]}" )" )" && pwd -P)
-BIN_DIR="exec"
+BIN_DIR="bin"
 BUILD_DIR="${BUILD_DIR:-${APP_DIR}/build}"
 BUILD_JOBS=4
 BUILD_TYPE="RELEASE"
+CLEAN=false
 CMAKE_SETTINGS=""
 INSTALL_DIR=${INSTALL_DIR:-${APP_DIR}/install}
+REMOVE=false
 VERBOSE=false
 
 # process optional arguments
@@ -103,6 +111,7 @@ while :; do
     --build-type|--build-type=) usage_error "$1 requires argument." ;;
     --build-jobs=?*) BUILD_JOBS=$((${1#*=})) ;;
     --build-jobs|--build-jobs=) usage_error "$1 requires argument." ;;
+    --clean) CLEAN=true ;;
     --compiler=?*|-c=?*) COMPILER=${1#*=} ;;
     --compiler|--compiler=|-c|-c=) usage_error "$1 requires argument." ;;
     --help|-h) usage; exit 0 ;;
@@ -110,6 +119,8 @@ while :; do
     --install-dir|--install-dir=|-i|-i=) usage_error "$1 requires argument." ;;
     --platform=?*|-p=?*) PLATFORM=${1#*=} ;;
     --platform|--platform=|-p|-p=) usage_error "$1 requires argument." ;;
+    --remove) REMOVE=true ;;
+    --remove=?*|--remove=) usage_error "$1 argument ignored." ;;
     --verbose|-v) VERBOSE=true ;;
     --verbose=?*|--verbose=) usage_error "$1 argument ignored." ;;
     # unknown
@@ -160,6 +171,21 @@ CMAKE_SETTINGS="\
 
 if [ ! -z "${APPLICATION}" ]; then
   CMAKE_SETTINGS="${CMAKE_SETTINGS} -DAPP=${APPLICATION}"
+
+  # application specific cmake settings
+  # adcirc
+  if [ "${APPLICATION}" == "CSTLA" ]; then
+    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DADCIRC_CONFIG=PADCIRC -DBUILD_ADCPREP=ON -DCOUPLED=ON"
+  # fvcom
+  elif [ "${APPLICATION}" == "CSTLF" ]; then
+    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DCOORDINATE_TYPE=SPHERICAL -DWET_DRY=ON"
+  # roms
+  elif [ "${APPLICATION}" == "CSTLR" ]; then
+    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DMY_CPP_FLAGS=BULK_FLUXES" 
+  # schism
+  elif [ "${APPLICATION}" == "CSTLS" ]; then
+    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON"
+  fi
 fi
 
 # make settings
@@ -179,12 +205,61 @@ module use ${APP_DIR}/sorc/ufs-coastal/modulefiles
 load_module "ufs_"
 module li
 
-mkdir -p ${BUILD_DIR}
-cd ${BUILD_DIR}
+# if build directory already exists then exit
+if [ "${REMOVE}" = true ]; then
+  # Clean build, install and executable directories
+  if [ -d "${BUILD_DIR}" ]; then
+    printf "Build directory already exists! Removing ${BUILD_DIR} ...\n"
+    rm -rf ${BUILD_DIR}
+  fi
+  if [ -d "${INSTALL_DIR}" ]; then
+    printf "Install directory already exists! Removing ${INSTALL_DIR} ...\n"
+    rm -rf ${INSTALL_DIR}
+  fi
+  # Create new build directory
+  mkdir -p ${BUILD_DIR}
+  cd ${BUILD_DIR}
+else
+  # The build directory exists
+  if [ -d "${BUILD_DIR}" ]; then
+    # Check which application is build
+    if [ -f ${BUILD_DIR}/CMakeCache.txt ]; then
+      # Query existing app
+      APP_BUILD=`cat ${BUILD_DIR}/CMakeCache.txt | grep "APP:BOOL=" | awk -F= '{print $2}'`
+      # Check with the requested one
+      if [ "${APPLICATION}" != "${APP_BUILD}" ]; then 
+        printf "Build directory already exists and used to build -DAPP=${APP_BUILD} but the requested application is -DAPP=${APPLICATION}\n" >&2
+        printf "Please clean existing build with --remove option and build again. Exiting ...\n" >&2
+        exit
+      else
+        cd ${BUILD_DIR}
+      fi
+    fi
+  # There is no build directory. Just create it
+  else
+    mkdir -p ${BUILD_DIR}
+    cd ${BUILD_DIR}
+  fi
+fi
 
 # configure model
 printf "Generate CMAKE configuration ...\n" >&2
 cmake ${APP_DIR} ${CMAKE_SETTINGS} 2>&1 | tee log.cmake
 
-# build model
-make ${MAKE_SETTINGS} install 2>&1 | tee log.make
+# build/clean model
+if [ "${CLEAN}" = true ]; then
+  if [ -f $PWD/Makefile ]; then
+    printf "Clean executables ...\n"
+    make ${MAKE_SETTINGS} clean 2>&1 | tee log.make
+  fi
+else
+  printf "Build and create executables ...\n"
+  make ${MAKE_SETTINGS} install 2>&1 | tee log.make
+fi
+
+# move executables
+if [ -f "${BUILD_DIR}/sorc/ufs-coastal/ufs_model" ]; then
+  printf "Moving executables to final locations ...\n"
+  mkdir -p ${INSTALL_DIR}/${BIN_DIR}
+  mv ${BUILD_DIR}/sorc/ufs-coastal/ufs_model ${INSTALL_DIR}/${BIN_DIR}/.
+fi
