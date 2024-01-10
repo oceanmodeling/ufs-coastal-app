@@ -6,12 +6,16 @@ cat << EOF_USAGE
 Usage: $0 --platform=PLATFORM [OPTIONS] ... [TARGETS]
 
 OPTIONS
+  -c, --compiler=COMPILER
+      compiler and version ("gcc@11.4.0" by default; any available compiler can be given) 
   -i, --install-dir=INSTALL_DIR
       installation prefix ("/opt" for container and "$HOME" for rest by default)
   --install-lmod
       install Lua/Lmod environment module tool to create interface for installed dependencies
   --install-core-pkgs
       install core develelopment packages required for spack-stack installation
+  -m, --mpi=MPI
+      mpi and version ("openmpi@4.1.5" by default; any available MPI implementation can be given)
   -v, --verbose
       build with verbose output
 
@@ -32,20 +36,15 @@ settings () {
 cat << EOF_SETTINGS
 Settings:
 
-  INSTALL_DIR      = ${INSTALL_DIR}
-  INSTALL_LMOD     = ${INSTALL_LMOD}
-  INSTALL_CORE_PKGS= ${INSTALL_CORE_PKGS}
+  COMPILER_TYPE     = ${COMPILER_TYPE}
+  COMPILER_VERSION  = ${COMPILER_VERSION}
+  INSTALL_DIR       = ${INSTALL_DIR}
+  INSTALL_LMOD      = ${INSTALL_LMOD}
+  INSTALL_CORE_PKGS = ${INSTALL_CORE_PKGS}
+  MPI_TYPE          = ${MPI_TYPE}
+  MPI_VERSION       = ${MPI_VERSION}
 
 EOF_SETTINGS
-}
-
-# check container or not
-check_container () {
-  if [ -f /.dockerenv ]; then
-    echo "0" 
-  else
-    echo "1"
-  fi
 }
 
 # check linux command
@@ -57,12 +56,77 @@ check_command () {
   fi  
 }
 
+# check container or not
+check_container () {
+  if [ -f /.dockerenv ]; then
+    echo "0"
+  else
+    echo "1"
+  fi
+}
+
+# check compiler
+check_compiler () {
+  # check requested MPI available as module
+  if [ $(check_command "module") == "0" ]; then
+    if [ -z "$(module -t list ${2})" ]; then
+      printf "INFO: No loaded module is found for ${2} compiler\n"
+      printf "INFO: Checking availablity through spack-stack ...\n"
+    fi
+  fi
+  # check requested compiler through command line
+  if [ $(check_command "gcc") == "0" ]; then
+    local version=$(gcc --version | head -n 1 | awk -F\) '{print $2}' | tr -d " ")
+    if [ "$version" != "${3}" ]; then
+      printf "ERROR: Requested ${2} compiler version ${3} is not the same with available one ${version}\n"
+      exit
+    fi
+  fi
+
+  # check compiler is found by spack-stack or not?
+  local COMPILER_STRING="${2}@=${3}"
+  if [ -z "$(cat ${1}/spack-stack/envs/ufs.local/site/compilers.yaml | grep ${COMPILER_STRING})" ]; then
+    printf "ERROR: Requested compiler ${2}@${3} is not found in compilers.yaml! Please select one from the following list. Exiting ...\n"
+    spack compiler list
+    exit
+  fi
+}
+
+# check environment variable
+check_env_var () {
+  if [ x"${1}" == "x" ]; then
+    echo "0"
+  else
+    echo "1"  	
+  fi
+}
+
+# check mpi
+check_mpi () {
+  # check requested MPI available as module
+  if [ $(check_command "module") == "0" ]; then
+    if [ -z "$(module -t list ${2})" ]; then
+      printf "INFO: No loaded module is found for ${2} MPI implementation\n"
+      printf "INFO: Checking availablity through spack-stack ...\n"
+    fi
+  fi
+
+  # check requested MPI is available through spack-stack
+  if [ -z "$(spack versions --safe ${2} | grep ${3} | tr -d " ")" ]; then
+    printf "ERROR: Requested MPI ${2}@${3} is not available through spack-stack! Please select one of the following versions. Exiting ...\n"
+    spack versions --safe ${2}
+    exit
+  else
+    printf "INFO: Requested MPI ${2}@${3} is available through spack-stack\n"
+  fi
+}
+
 # check package manager
 check_pkg_manager () {
   if [ -f /etc/lsb-release ]; then
     . /etc/lsb-release
     echo $DISTRIB_ID
-  fi  
+  fi
 }
 
 # install packages with apt package manager
@@ -111,6 +175,7 @@ LUA_VERSION=5.1.4.9
 LMOD_VERSION=8.7
 
 # default settings
+COMPILER="gcc@11.4.0"
 if [ ${IS_CONTAINER} == "0" ]; then
   INSTALL_DIR=${INSTALL_DIR:-/opt}
 else
@@ -118,16 +183,21 @@ else
 fi
 INSTALL_LMOD=false
 INSTALL_CORE_PKGS=false
+MPI="openmpi@4.1.5"
 VERBOSE=false
 
 # process optional arguments
 while :; do
   case $1 in
+    --compiler=?*|-c=?*) COMPILER=${1#*=} ;;
+    --compiler|--compiler=|-c|-c=) usage_error "$1 requires argument." ;;
     --help|-h) usage; exit 0 ;;
     --install-dir=?*|-i=?*) INSTALL_DIR=${1#*=} ;;
     --install-dir|--install-dir=|-i|-i=) usage_error "$1 requires argument." ;;
     --install-lmod) INSTALL_LMOD=true ;;
     --install-core-pkgs) INSTALL_CORE_PKGS=true ;;
+    --mpi=?*|-m=?*) MPI=${1#*=} ;;
+    --mpi|--mpi=|-m|-m=) usage_error "$1 requires argument." ;;
     --verbose|-v) VERBOSE=true ;;
     --verbose=?*|--verbose=) usage_error "$1 argument ignored." ;;
     # unknown
@@ -136,11 +206,6 @@ while :; do
   esac
   shift
 done
-
-# print settings
-if [ "${VERBOSE}" = true ] ; then
-  settings
-fi
 
 # install code development packages
 if [ "${INSTALL_CORE_PKGS}" = true ]; then
@@ -207,4 +272,83 @@ if [ "${INSTALL_LMOD}" = true ]; then
   fi
 fi
 
+# clone spack-stack and activate
+cd ${INSTALL_DIR}
+if [ ! -d ${INSTALL_DIR}/spack-stack ]; then
+  git clone --recurse-submodules https://github.com/jcsda/spack-stack.git
+fi
+cd spack-stack
+export SPACK_ROOT=${INSTALL_DIR}/spack-stack/spack
+source setup.sh
 
+# create new environment and activate it
+if [ ! -d ${INSTALL_DIR}/spack-stack/envs/ufs.local ]; then
+  spack stack create env --site linux.default --template ufs-weather-model --name ufs.local --prefix ${INSTALL_DIR}/ufs.local
+fi
+cd envs/ufs.local/
+spack env activate .
+
+# change directory
+cd ${INSTALL_DIR}/spack-stack
+
+# find externals
+if [[ ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/site/compilers.yaml && \
+      ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/site/packages.yaml ]]; then
+  export SPACK_SYSTEM_CONFIG_PATH="${INSTALL_DIR}/spack-stack/envs/ufs.local/site" && \
+  spack external find --scope system --exclude bison --exclude cmake --exclude curl --exclude openssl --exclude openssh
+  spack external find --scope system perl
+  spack external find --scope system wget
+  spack external find --scope system mysql
+  spack external find --scope system texlive
+  spack compiler find --scope system
+  unset SPACK_SYSTEM_CONFIG_PATH
+fi
+
+# set compiler and its version
+COMPILER_TYPE=$(echo $COMPILER | awk -F\@ '{print $1}')
+COMPILER_VERSION=$(echo $COMPILER | awk -F\@ '{print $2}')
+check_compiler ${INSTALL_DIR} ${COMPILER_TYPE} ${COMPILER_VERSION}
+
+# set MPI and its version
+MPI_TYPE=$(echo $MPI | awk -F\@ '{print $1}')
+MPI_VERSION=$(echo $MPI | awk -F\@ '{print $2}')
+check_mpi ${INSTALL_DIR} ${MPI_TYPE} ${MPI_VERSION}
+
+# print settings
+if [ "${VERBOSE}" = true ] ; then
+  settings
+fi
+
+# customization of spack-stack configuration
+if [ -z "$(cat ${INSTALL_DIR}/spack-stack/envs/ufs.local/spack.yaml | grep ${COMPILER_TYPE}@${COMPILER_VERSION})" ]; then
+  spack config add "packages:all:compiler:[${COMPILER_TYPE}@${COMPILER_VERSION}]"
+  spack config add "packages:all:providers:mpi:[${MPI_TYPE}@${MPI_VERSION}]"
+  spack config add "packages:fontconfig:variants:+pic"
+  spack config add "packages:pixman:variants:+pic"
+  spack config add "packages:cairo:variants:+pic"
+  spack config add "packages:libffi:version:[3.3]"
+fi
+
+# concretize
+cd ${INSTALL_DIR}/spack-stack/envs/ufs.local
+if [[ $(check_env_var __LMOD_REF_COUNT_MODULEPATH) ]]; then
+  sed -i 's/tcl/lmod/g' site/modules.yaml
+fi
+cd /opt/spack-stack
+if [ ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/spack.lock ]; then
+  spack --color always concretize 2>&1 | tee log.concretize
+fi
+
+# install dependencies
+spack  --color always install --source -j3 2>&1 | tee log.install
+
+# clean
+spack gc -y  2>&1 | tee log.clean
+
+# post-installation steps
+if [[ $(check_env_var __LMOD_REF_COUNT_MODULEPATH) ]]; then
+  spack module lmod refresh -y
+else
+  spack module tcl refresh -y
+fi
+spack stack setup-meta-modules
