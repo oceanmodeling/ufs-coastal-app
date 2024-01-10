@@ -67,6 +67,7 @@ check_pkg_manager () {
 
 # install packages with apt package manager
 install_with_apt () {
+  export DEBIAN_FRONTEND=noninteractive
   apt-get -yqq update
   apt-get -yqq upgrade
   apt install --no-install-recommends -yqq \
@@ -87,7 +88,7 @@ install_with_apt () {
   mysql-server \
   libmysqlclient-dev  \
   python3-dev  \
-  python3-pip
+  python3-pip \
   wget  \
   rsync \
   tcl  \
