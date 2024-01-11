@@ -135,6 +135,9 @@ install_with_apt () {
   apt-get -yqq update
   apt-get -yqq upgrade
   apt install --no-install-recommends -yqq \
+  gcc \
+  g++ \
+  gfortran \
   build-essential \
   libkrb5-dev \
   m4 \
@@ -294,7 +297,7 @@ cd ${INSTALL_DIR}/spack-stack
 # find externals
 if [[ ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/site/compilers.yaml && \
       ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/site/packages.yaml ]]; then
-  export SPACK_SYSTEM_CONFIG_PATH="${INSTALL_DIR}/spack-stack/envs/ufs.local/site" && \
+  export SPACK_SYSTEM_CONFIG_PATH="${INSTALL_DIR}/spack-stack/envs/ufs.local/site"
   spack external find --scope system --exclude bison --exclude cmake --exclude curl --exclude openssl --exclude openssh
   spack external find --scope system perl
   spack external find --scope system wget
