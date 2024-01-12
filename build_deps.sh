@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# defs
+RED=$(tput bold setaf 1)
+BLUE=$(tput bold setaf 4)
+NORMAL=$(tput bold sgr0)
+
 # usage instructions
 usage () {
 cat << EOF_USAGE
@@ -70,25 +75,31 @@ check_compiler () {
   # check requested MPI available as module
   if [ $(check_command "module") == "0" ]; then
     if [ -z "$(module -t list ${2})" ]; then
-      printf "INFO: No loaded module is found for ${2} compiler\n"
-      printf "INFO: Checking availablity through spack-stack ...\n"
+      printf "${BLUE}INFO: No loaded module is found for ${2} compiler${NORMAL}\n"
     fi
   fi
   # check requested compiler through command line
   if [ $(check_command "gcc") == "0" ]; then
     local version=$(gcc --version | head -n 1 | awk -F\) '{print $2}' | tr -d " ")
     if [ "$version" != "${3}" ]; then
-      printf "ERROR: Requested ${2} compiler version ${3} is not the same with available one ${version}\n"
-      exit
+      printf "${RED}ERROR: Requested ${2} compiler version ${3} is not the same with available one ${version}${NORMAL}\n"
+      exit 0
     fi
   fi
 
   # check compiler is found by spack-stack or not?
   local COMPILER_STRING="${2}@=${3}"
-  if [ -z "$(cat ${1}/spack-stack/envs/ufs.local/site/compilers.yaml | grep ${COMPILER_STRING})" ]; then
-    printf "ERROR: Requested compiler ${2}@${3} is not found in compilers.yaml! Please select one from the following list. Exiting ...\n"
-    spack compiler list
-    exit
+  if [ -f ${1}/spack-stack/envs/ufs.local/site/compilers.yaml ]; then
+    if [ -z "$(cat ${1}/spack-stack/envs/ufs.local/site/compilers.yaml | grep ${COMPILER_STRING})" ]; then
+      printf "${RED}ERROR:${NORMAL} Requested compiler ${2}@${3} is not found in compilers.yaml! Exiting ...\n"
+      if [ $(check_command "spack") == "0" ]; then
+        spack compiler list
+      fi
+      exit 0
+    fi
+  else
+    printf "${RED}ERROR:${NORMAL} ${1}/spack-stack/envs/ufs.local/site/compilers.yaml is not found! Exiting ...\n"
+    exit 0
   fi
 }
 
@@ -143,6 +154,7 @@ install_with_apt () {
   m4 \
   git \
   git-lfs \
+  vim \
   bzip2 \
   unzip \
   tar \
@@ -152,8 +164,6 @@ install_with_apt () {
   libcurl4-openssl-dev \
   libssl-dev \
   meson \
-  mysql-server \
-  libmysqlclient-dev  \
   python3-dev  \
   python3-pip \
   wget  \
@@ -186,7 +196,7 @@ else
 fi
 INSTALL_LMOD=false
 INSTALL_CORE_PKGS=false
-MPI="openmpi@4.1.5"
+MPI="openmpi@4.1.6"
 VERBOSE=false
 
 # process optional arguments
@@ -212,11 +222,11 @@ done
 
 # install code development packages
 if [ "${INSTALL_CORE_PKGS}" = true ]; then
-  printf "INFO: Installing core packages with OS package manager ...\n"
+  printf "${BLUE}INFO: Installing core packages with OS package manager ...${NORMAL}\n"
   case "$(check_pkg_manager)" in
     Ubuntu) install_with_apt ;;
     # unknown
-    -?*|?*) printf "ERROR: Unknown OS/package manager! Exiting ... \n" ;;
+    -?*|?*) printf "${RED}ERROR: Unknown OS/package manager! Exiting ...${NORMAL}\n" ;;
     *) break
   esac
 fi
@@ -301,7 +311,7 @@ if [[ ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/site/compilers.yaml && \
   spack external find --scope system --exclude bison --exclude cmake --exclude curl --exclude openssl --exclude openssh
   spack external find --scope system perl
   spack external find --scope system wget
-  spack external find --scope system mysql
+  #spack external find --scope system mysql
   spack external find --scope system texlive
   spack compiler find --scope system
   unset SPACK_SYSTEM_CONFIG_PATH
