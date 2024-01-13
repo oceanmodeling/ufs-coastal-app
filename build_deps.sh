@@ -343,11 +343,7 @@ if [ -z "$(cat ${INSTALL_DIR}/spack-stack/envs/ufs.local/spack.yaml | grep ${COM
 fi
 
 # concretize
-cd ${INSTALL_DIR}/spack-stack/envs/ufs.local
-if [[ $(check_env_var __LMOD_REF_COUNT_MODULEPATH) ]]; then
-  sed -i 's/tcl/lmod/g' site/modules.yaml
-fi
-cd /opt/spack-stack
+cd ${INSTALL_DIR}/spack-stack
 if [ ! -f ${INSTALL_DIR}/spack-stack/envs/ufs.local/spack.lock ]; then
   spack --color always concretize 2>&1 | tee log.concretize
 fi
@@ -359,9 +355,13 @@ spack  --color always install --source -j3 2>&1 | tee log.install
 spack gc -y  2>&1 | tee log.clean
 
 # post-installation steps
-if [[ $(check_env_var __LMOD_REF_COUNT_MODULEPATH) ]]; then
-  spack module lmod refresh -y
-else
-  spack module tcl refresh -y
-fi
+spack module tcl refresh -y
 spack stack setup-meta-modules
+
+# test modules are working or not
+#source ${INSTALL_DIR}/lmod/lmod/8.7/init/profile
+#module use ${INSTALL_DIR}/ufs.local/modulefiles/Core
+#module load stack-gcc/11.4.0
+#module load stack-python/3.10.13
+#module load stack-openmpi/4.1.6
+#module li
