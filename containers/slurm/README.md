@@ -2,7 +2,7 @@
 
 The Slurm container is a self consistent [Docker](https://www.docker.com) container that allows to use/practice Slurm commands under Ubuntu 22.04.
 
-To build and run the conatiner, docker commands need to be available. [Docker Desktop](https://www.docker.com/products/docker-desktop/) can be used for this purpose.
+To build and run the container, docker commands need to be available. [Docker Desktop](https://www.docker.com/products/docker-desktop/) can be used for this purpose.
 
 The container can be built using following commands,
 
