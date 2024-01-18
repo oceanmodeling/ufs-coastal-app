@@ -21,6 +21,8 @@ OPTIONS
       install core develelopment packages required for spack-stack installation
   -m, --mpi=MPI
       mpi and version ("openmpi@4.1.5" by default; any available MPI implementation can be given)
+  -s, --spack-stack-version=SPACK_VERSION
+      spack-stack version ("develop" by default; any vaild spack-stack version can be given)
   -v, --verbose
       build with verbose output
 
@@ -41,13 +43,14 @@ settings () {
 cat << EOF_SETTINGS
 Settings:
 
-  COMPILER_TYPE     = ${COMPILER_TYPE}
-  COMPILER_VERSION  = ${COMPILER_VERSION}
-  INSTALL_DIR       = ${INSTALL_DIR}
-  INSTALL_LMOD      = ${INSTALL_LMOD}
-  INSTALL_CORE_PKGS = ${INSTALL_CORE_PKGS}
-  MPI_TYPE          = ${MPI_TYPE}
-  MPI_VERSION       = ${MPI_VERSION}
+  COMPILER_TYPE       = ${COMPILER_TYPE}
+  COMPILER_VERSION    = ${COMPILER_VERSION}
+  INSTALL_DIR         = ${INSTALL_DIR}
+  INSTALL_LMOD        = ${INSTALL_LMOD}
+  INSTALL_CORE_PKGS   = ${INSTALL_CORE_PKGS}
+  MPI_TYPE            = ${MPI_TYPE}
+  MPI_VERSION         = ${MPI_VERSION}
+  SPACK_STACK_VERSION = ${SPACK_STACK_VERSION}
 
 EOF_SETTINGS
 }
@@ -59,15 +62,6 @@ check_command () {
   else
     echo "0"
   fi  
-}
-
-# check container or not
-check_container () {
-  if [ -f /.dockerenv ]; then
-    echo "0"
-  else
-    echo "1"
-  fi
 }
 
 # check compiler
@@ -180,23 +174,17 @@ if [[ ("$1" == "--help") || ("$1" == "-h") ]]; then
   exit 0
 fi
 
-# check container
-IS_CONTAINER=$(check_container)
-
 # default versions
 LUA_VERSION=5.1.4.9
 LMOD_VERSION=8.7
 
 # default settings
 COMPILER="gcc@11.4.0"
-if [ ${IS_CONTAINER} == "0" ]; then
-  INSTALL_DIR=${INSTALL_DIR:-/opt}
-else
-  INSTALL_DIR=${INSTALL_DIR:-$HOME}
-fi
+INSTALL_DIR=${INSTALL_DIR:-$HOME}
 INSTALL_LMOD=false
 INSTALL_CORE_PKGS=false
 MPI="openmpi@4.1.6"
+SPACK_STACK_VERSION="develop"
 VERBOSE=false
 
 # process optional arguments
@@ -211,6 +199,8 @@ while :; do
     --install-core-pkgs) INSTALL_CORE_PKGS=true ;;
     --mpi=?*|-m=?*) MPI=${1#*=} ;;
     --mpi|--mpi=|-m|-m=) usage_error "$1 requires argument." ;;
+    --spack-stack-version=?*|-s=?*) SPACK_STACK_VERSION=${1#*=} ;;
+    --spack-stack-version|--spack-stack-version=|-s|-s=) usage_error "$1 requires argument." ;;
     --verbose|-v) VERBOSE=true ;;
     --verbose=?*|--verbose=) usage_error "$1 argument ignored." ;;
     # unknown
@@ -268,9 +258,9 @@ if [ "${INSTALL_LMOD}" = true ]; then
     fi
 
     # activate lmod
-    source ${INSTALL_DIR}/lmod/lmod/8.7/init/profile
+    source ${INSTALL_DIR}/lmod/lmod/${LMOD_VERSION}/init/profile
     if [ $(check_container) == "0" ]; then
-      ln -sf ${INSTALL_DIR}/lmod/lmod/8.7/init/profile /etc/profile.d/lmod.sh
+      ln -sf ${INSTALL_DIR}/lmod/lmod/${LMOD_VERSION}/init/profile /etc/profile.d/lmod.sh
     fi
     if [ $(check_command "module") == "1" ]; then
       printf "ERROR: Lmod is not working! Please check the installation ...\n"
@@ -283,14 +273,23 @@ if [ "${INSTALL_LMOD}" = true ]; then
     echo "Please install wget & rsync commands! Exiting ..."
     exit
   fi
+
+  # TODO: add lmod script to /etc/profile.d
+  #ln -s ${INSTALL_DIR}/lmod/${LMOD_VERSION}/init/profile /etc/profile.d/lmod.sh
+
+  # TODO: add lmod script to use shell
+  #echo "source ${INSTALL_DIR}/lmod/${LMOD_VERSION}/init/profile" >> ${HOME}/.bashrc
 fi
 
 # clone spack-stack and activate
 cd ${INSTALL_DIR}
 if [ ! -d ${INSTALL_DIR}/spack-stack ]; then
   git clone --recurse-submodules https://github.com/jcsda/spack-stack.git
+  cd spack-stack
+  git checkout ${SPACK_STACK_VERSION}
+else
+  cd spack-stack
 fi
-cd spack-stack
 export SPACK_ROOT=${INSTALL_DIR}/spack-stack/spack
 source setup.sh
 
@@ -357,11 +356,3 @@ spack gc -y  2>&1 | tee log.clean
 # post-installation steps
 spack module tcl refresh -y
 spack stack setup-meta-modules
-
-# test modules are working or not
-#source ${INSTALL_DIR}/lmod/lmod/8.7/init/profile
-#module use ${INSTALL_DIR}/ufs.local/modulefiles/Core
-#module load stack-gcc/11.4.0
-#module load stack-python/3.10.13
-#module load stack-openmpi/4.1.6
-#module li
