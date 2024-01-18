@@ -2,7 +2,7 @@
 
 The [Spack-stack](https://github.com/JCSDA/spack-stack) container is a self consistent [Docker](https://www.docker.com) container that includes dependencies to run [UFS Coastal](https://github.com/oceanmodeling/ufs-coastal) and/or any other UFS Model. 
 
-The container leverages from `build_deps.sh` script to install required dependencies and tools. To run the UFS Coastal provided Regression Tests (RTs), it uses Slurm docker container as a base container. It is also possible to build the container by using Ubuntu as a base container without Slurm Workload Manager.
+The container leverages from `build_deps.sh` script to install required dependencies and tools. To run the UFS Coastal provided Regression Tests (RTs), it uses Slurm docker container as a base container. More information to build Slurm container can be found in [here](https://github.com/oceanmodeling/ufs-coastal-app/blob/main/containers/slurm/README.md).
 
 To build and run the container, docker commands need to be available. [Docker Desktop](https://www.docker.com/products/docker-desktop/) can be used for this purpose.
 
