@@ -9,8 +9,8 @@ To build and run the container, docker commands need to be available. [Docker De
 The container can be built using following commands,
 
 ```shell
-$ cd ufs-coastal-app/containers/spack-stack
-$ docker build -t spack-stack:latest .
+$ cd ufs-coastal-app
+$ docker build -f containers/spack-stack/Dockerfile -t spack-stack:latest .
 ```
 
 Once the container is built, the following command can be use to run it.

@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# defs
-RED=$(tput bold setaf 1)
-BLUE=$(tput bold setaf 4)
-NORMAL=$(tput bold sgr0)
-
 # usage instructions
 usage () {
 cat << EOF_USAGE
@@ -69,14 +64,14 @@ check_compiler () {
   # check requested MPI available as module
   if [ $(check_command "module") == "0" ]; then
     if [ -z "$(module -t list ${2})" ]; then
-      printf "${BLUE}INFO: No loaded module is found for ${2} compiler${NORMAL}\n"
+      printf "INFO: No loaded module is found for ${2} compiler\n"
     fi
   fi
   # check requested compiler through command line
   if [ $(check_command "gcc") == "0" ]; then
     local version=$(gcc --version | head -n 1 | awk -F\) '{print $2}' | tr -d " ")
     if [ "$version" != "${3}" ]; then
-      printf "${RED}ERROR: Requested ${2} compiler version ${3} is not the same with available one ${version}${NORMAL}\n"
+      printf "ERROR: Requested ${2} compiler version ${3} is not the same with available one ${version}\n"
       exit 0
     fi
   fi
@@ -85,14 +80,14 @@ check_compiler () {
   local COMPILER_STRING="${2}@=${3}"
   if [ -f ${1}/spack-stack/envs/ufs.local/site/compilers.yaml ]; then
     if [ -z "$(cat ${1}/spack-stack/envs/ufs.local/site/compilers.yaml | grep ${COMPILER_STRING})" ]; then
-      printf "${RED}ERROR:${NORMAL} Requested compiler ${2}@${3} is not found in compilers.yaml! Exiting ...\n"
+      printf "ERROR: Requested compiler ${2}@${3} is not found in compilers.yaml! Exiting ...\n"
       if [ $(check_command "spack") == "0" ]; then
         spack compiler list
       fi
       exit 0
     fi
   else
-    printf "${RED}ERROR:${NORMAL} ${1}/spack-stack/envs/ufs.local/site/compilers.yaml is not found! Exiting ...\n"
+    printf "ERROR: ${1}/spack-stack/envs/ufs.local/site/compilers.yaml is not found! Exiting ...\n"
     exit 0
   fi
 }
@@ -212,11 +207,11 @@ done
 
 # install code development packages
 if [ "${INSTALL_CORE_PKGS}" = true ]; then
-  printf "${BLUE}INFO: Installing core packages with OS package manager ...${NORMAL}\n"
+  printf "INFO: Installing core packages with OS package manager ...\n"
   case "$(check_pkg_manager)" in
     Ubuntu) install_with_apt ;;
     # unknown
-    -?*|?*) printf "${RED}ERROR: Unknown OS/package manager! Exiting ...${NORMAL}\n" ;;
+    -?*|?*) printf "ERROR: Unknown OS/package manager! Exiting ...\n" ;;
     *) break
   esac
 fi

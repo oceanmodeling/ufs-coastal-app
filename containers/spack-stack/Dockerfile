@@ -22,17 +22,17 @@ LABEL description="Build Image for UFS Weather Model" \
   version="${SPACK_STACK_VERSION}"
 
 # copy install script
-COPY ../../build_deps.sh /opt/.
+COPY build_deps.sh /opt/.
 
 # change default shell to bash
 SHELL ["/bin/bash", "-c"]
 
 # checkout and configure spack
 RUN cd /opt && \
-  ./build_deps.sh --compiler=gcc@${COMPILER_VERSION} --mpi=openmpi@${MPI_VERSION} --install-lmod --install-core-pkgs -v
+  ./build_deps.sh --compiler=gcc@${COMPILER_VERSION} --mpi=openmpi@${MPI_VERSION} --install-dir=/opt --install-lmod --install-core-pkgs -v
 
 # clean unused files to reduce container size
-RUN cd /root/ufs.local/gcc/${COMPILER_VERSION} && \
+RUN cd /opt/ufs.local/gcc/${COMPILER_VERSION} && \
   rm -rf crtm*/share/crtm/src/fix && \
   rm -rf crtm*/share/crtm/src/.git && \
   rm -rf crtm*/fix && \
