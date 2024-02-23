@@ -1,43 +1,45 @@
-.. _porting:
+.. _PortingModel:
 
-=========================
+*************************
 Porting UFS Coastal Model
-=========================
+*************************
 
-Porting UFS Coastal to unsupported platform involves multiple steps that is explained briefly
-in the following sections for different environments.
+Porting UFS Coastal Model to an unsupported platform involves multiple steps. Similar to the UFS Weather Model, the UFS Coastal Model also uses `spack-stack <https://github.com/JCSDA/spack-stack>`_ package manager to manage model dependencies. In addition to the standard list of dependencies required by the UFS Weather Model, the UFS Coastal Model has extra dependencies for the addtional model components like `ParMETIS <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/overview>`_ and `PROJ <https://proj.org/en/5.1/>`_ libraries. The UFS Coastal Model component is able to install extra dependecies by theirself if they are not provided by the system or spack-stack.
 
-----------------
+The prerequisite software libraries for building the UFS Coastal Model already exist in a centralized location on `Tier 1 <https://spack-stack.readthedocs.io/en/latest/PreConfiguredSites.html#pre-configured-sites-tier-1>`_ (preconfigured) systems, so users could run the model in those plaotforms. The list of pre-configured Tier 1 & 2 systems are generally restricted to those with access through NOAA and its affiliates. These systems are named (e.g., Hera, Orion, Hercules and Derecho).
+
+In addtion to the already supported systems, UFS Coastal is also ported to `TACC Frontera <https://tacc.utexas.edu/systems/frontera/>`_ system but this is still experimental.
+
+================
 Docker Container
-----------------
+================
 
 1. Create new Docker container and install base development environment:
 
 .. code-block:: console
 
-  docker run -it ubuntu:latest
+   docker run -it ubuntu:latest
 
-  apt-get update
-  apt-get upgrade
-  apt-get install -y gcc g++ gfortran gdb
-  apt-get install -y environment-modules
-  apt-get install -y build-essential
-  apt-get install -y libkrb5-dev
-  apt-get install -y m4
-  apt-get install -y git
-  apt-get install -y git-lfs
-  apt-get install -y bzip2
-  apt-get install -y unzip
-  apt-get install -y automake
-  apt-get install -y xterm
-  apt-get install -y texlive
-  apt-get install -y libcurl4-openssl-dev
-  apt-get install -y libssl-dev
-  apt-get install -y meson
-  apt-get install -y mysql-server
-  apt-get install -y libmysqlclient-dev
-  apt-get install -y python3-dev python3-pip
-  apt-get install -y openmpi-bin libopenmpi-dev
+   apt-get update
+   apt-get upgrade
+   apt-get install -y gcc g++ gfortran gdb
+   apt-get install -y build-essential
+   apt-get install -y libkrb5-dev
+   apt-get install -y m4
+   apt-get install -y git
+   apt-get install -y git-lfs
+   apt-get install -y bzip2
+   apt-get install -y unzip
+   apt-get install -y automake
+   apt-get install -y xterm
+   apt-get install -y texlive
+   apt-get install -y libcurl4-openssl-dev
+   apt-get install -y libssl-dev
+   apt-get install -y meson
+   apt-get install -y mysql-server
+   apt-get install -y libmysqlclient-dev
+   apt-get install -y python3-dev python3-pip
+   apt-get install -y openmpi-bin libopenmpi-dev
 
 2. Log out and in to container (save hash of container)
 

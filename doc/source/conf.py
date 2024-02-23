@@ -44,6 +44,7 @@ extensions = [
     "sphinxcontrib.programoutput",
 ]
 todo_include_todos = True
+numfig = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
