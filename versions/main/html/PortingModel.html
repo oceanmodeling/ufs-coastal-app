@@ -112,7 +112,14 @@
 <li class="toctree-l1"><a class="reference internal" href="BuildingAndRunning.html">2. Building and Running the UFS Coastal</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Configurations.html">3. Configurations</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">4. Porting UFS Coastal Model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#docker-container">4.1. Docker Container</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#additionally-supported-platforms">4.1. Additionally Supported Platforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">4.1.1. TACC Frontera</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-dependencies">4.2. Installing Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#docker-container">4.2.1. Docker Container</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -180,75 +187,88 @@
             
   <section id="porting-ufs-coastal-model">
 <span id="portingmodel"></span><h1><span class="section-number">4. </span>Porting UFS Coastal Model<a class="headerlink" href="#porting-ufs-coastal-model" title="Permalink to this heading">¶</a></h1>
-<p>Porting UFS Coastal Model to an unsupported platform involves multiple steps. Similar to the UFS Weather Model, the UFS Coastal Model also uses <a class="reference external" href="https://github.com/JCSDA/spack-stack">spack-stack</a> package manager to manage model dependencies. In addition to the standard list of dependencies required by the UFS Weather Model, the UFS Coastal Model has extra dependencies for the addtional model components like <a class="reference external" href="http://glaros.dtc.umn.edu/gkhome/metis/parmetis/overview">ParMETIS</a> and <a class="reference external" href="https://proj.org/en/5.1/">PROJ</a> libraries. The UFS Coastal Model component is able to install extra dependecies by theirself if they are not provided by the system or spack-stack.</p>
-<p>The prerequisite software libraries for building the UFS Coastal Model already exist in a centralized location on <a class="reference external" href="https://spack-stack.readthedocs.io/en/latest/PreConfiguredSites.html#pre-configured-sites-tier-1">Tier 1</a> (preconfigured) systems, so users could run the model in those plaotforms. The list of pre-configured Tier 1 &amp; 2 systems are generally restricted to those with access through NOAA and its affiliates. These systems are named (e.g., Hera, Orion, Hercules and Derecho).</p>
-<p>In addtion to the already supported systems, UFS Coastal is also ported to <a class="reference external" href="https://tacc.utexas.edu/systems/frontera/">TACC Frontera</a> system but this is still experimental.</p>
+<p>Porting UFS Coastal Model to an unsupported platform involves multiple steps. Similar to the UFS Weather Model, the UFS Coastal Model also uses <a class="reference external" href="https://github.com/JCSDA/spack-stack">spack-stack</a> package manager to manage model level dependencies. In addition to the standard list of dependencies required by the UFS Weather Model, the UFS Coastal Model has extra dependencies like <a class="reference external" href="http://glaros.dtc.umn.edu/gkhome/metis/parmetis/overview">ParMETIS</a> and <a class="reference external" href="https://proj.org/en/5.1/">PROJ</a> libraries. The addtional components (i.e. ADCIRC, FVCOM) are able to install extra dependecies by their own build interface if the required libraries are not provided by the system or spack-stack installation.</p>
+<p>The model dependencies are pre-configured and bult on <a class="reference external" href="https://spack-stack.readthedocs.io/en/latest/PreConfiguredSites.html#pre-configured-sites-tier-1">Tier 1</a> systems, so users could run the model in those plaotforms. The Tier 1 &amp; 2 systems (e.g., Hera, Orion, Hercules and Derecho) are generally restricted to those with access through NOAA and its affiliates. To that end, the UFS Coastal is ported to <a class="reference external" href="https://tacc.utexas.edu/systems/frontera/">TACC Frontera</a> system support coastal modeling community and users but it is still testing phase and experimental.</p>
+<section id="additionally-supported-platforms">
+<h2><span class="section-number">4.1. </span>Additionally Supported Platforms<a class="headerlink" href="#additionally-supported-platforms" title="Permalink to this heading">¶</a></h2>
+<section id="id1">
+<h3><span class="section-number">4.1.1. </span>TACC Frontera<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>This platform is not fully supported yet and still in testing phase. It uses <code class="docutils literal notranslate"><span class="pre">spack-stack</span></code> version <code class="docutils literal notranslate"><span class="pre">1.5.1</span></code> and supports only Intel compiler (<code class="docutils literal notranslate"><span class="pre">19.1.1.217</span></code>) along with Intel MPI (<code class="docutils literal notranslate"><span class="pre">2020.4.304</span></code>). The module file <a class="reference external" href="https://github.com/oceanmodeling/ufs-coastal/blob/feature/coastal_app/modulefiles/ufs_frontera.intel.lua">ufs_frontera.intel.lua</a> is also included to the UFS Coastal code base along with update in RT framework to enable experimenting the new platform. There is a plan to update <code class="docutils literal notranslate"><span class="pre">spack-stack</span></code> version and also used compiler and MPI versions.</p>
+</section>
+</section>
+<section id="installing-dependencies">
+<h2><span class="section-number">4.2. </span>Installing Dependencies<a class="headerlink" href="#installing-dependencies" title="Permalink to this heading">¶</a></h2>
 <section id="docker-container">
-<h2><span class="section-number">4.1. </span>Docker Container<a class="headerlink" href="#docker-container" title="Permalink to this heading">¶</a></h2>
+<h3><span class="section-number">4.2.1. </span>Docker Container<a class="headerlink" href="#docker-container" title="Permalink to this heading">¶</a></h3>
+<p>A <a class="reference external" href="https://www.docker.com/">Docker</a> container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings. It enables creating development and testing environment that run on local resources.</p>
+<p>The <a class="reference external" href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a> is required to build and run the Docker containers.</p>
+<p>The following instructions can be used to create a new Docker container from scratch but the pre-build container can be also used to run UFS Coastal. There is a plan to make available pre-configured Docker Containers for UFS Coastal through the <a class="reference external" href="https://hub.docker.com">DockerHub</a>.</p>
 <ol class="arabic simple">
-<li><p>Create new Docker container and install base development environment:</p></li>
+<li><p>Run a new Docker container</p></li>
 </ol>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker run -it ubuntu:latest</span>
-
-<span class="go">apt-get update</span>
-<span class="go">apt-get upgrade</span>
-<span class="go">apt-get install -y gcc g++ gfortran gdb</span>
-<span class="go">apt-get install -y build-essential</span>
-<span class="go">apt-get install -y libkrb5-dev</span>
-<span class="go">apt-get install -y m4</span>
-<span class="go">apt-get install -y git</span>
-<span class="go">apt-get install -y git-lfs</span>
-<span class="go">apt-get install -y bzip2</span>
-<span class="go">apt-get install -y unzip</span>
-<span class="go">apt-get install -y automake</span>
-<span class="go">apt-get install -y xterm</span>
-<span class="go">apt-get install -y texlive</span>
-<span class="go">apt-get install -y libcurl4-openssl-dev</span>
-<span class="go">apt-get install -y libssl-dev</span>
-<span class="go">apt-get install -y meson</span>
-<span class="go">apt-get install -y mysql-server</span>
-<span class="go">apt-get install -y libmysqlclient-dev</span>
-<span class="go">apt-get install -y python3-dev python3-pip</span>
-<span class="go">apt-get install -y openmpi-bin libopenmpi-dev</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In this case, the command will create a Docker Container that uses Ubuntu OS.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">--rm</span></code> argument can be used when the container needed to be deleted after the task for it is complete.
+The optional <code class="docutils literal notranslate"><span class="pre">--platform</span></code> argument can be used to emulate specific platform (i.e. linux/amd64). This needs to be used carefully since it could slow down the container.</p>
+</div>
 <ol class="arabic simple" start="2">
-<li><p>Log out and in to container (save hash of container)</p></li>
+<li><p>Install base development environment with Ubuntu package manager (apt).</p></li>
 </ol>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">exit</span>
-<span class="go">docker exec -it [HASH_OF_DOCKER_CONTAINER] bash</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">apt-get -yqq update</span>
+<span class="go">apt-get -yqq upgrade</span>
+<span class="go">apt-get install --no-install-recommends -yqq \</span>
+<span class="go">gcc \</span>
+<span class="go">g++ \</span>
+<span class="go">gfortran \</span>
+<span class="go">build-essential \</span>
+<span class="go">libkrb5-dev \</span>
+<span class="go">m4 \</span>
+<span class="go">git \</span>
+<span class="go">git-lfs \</span>
+<span class="go">vim \</span>
+<span class="go">bzip2 \</span>
+<span class="go">unzip \</span>
+<span class="go">tar \</span>
+<span class="go">automake \</span>
+<span class="go">xterm \</span>
+<span class="go">texlive \</span>
+<span class="go">libcurl4-openssl-dev \</span>
+<span class="go">libssl-dev \</span>
+<span class="go">meson \</span>
+<span class="go">python3-dev  \</span>
+<span class="go">python3-pip \</span>
+<span class="go">wget  \</span>
+<span class="go">rsync \</span>
+<span class="go">tcl  \</span>
+<span class="go">tcl-dev \</span>
+<span class="go">openssh-client</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="3">
 <li><p>Clone Spack-stack</p></li>
 </ol>
-<p>In this case, <code class="docutils literal notranslate"><span class="pre">/opt</span></code> directory will be used to install the dependencies but there is no
-any restriction to use another directory for it.</p>
+<p>In this case, <code class="docutils literal notranslate"><span class="pre">/opt</span></code> directory will be used to install the dependencies but there is no any restriction to use another directory for installation. Also, spack-stack 1.5.1 is used as an example.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd /opt</span>
 <span class="go">git clone --recurse-submodules https://github.com/jcsda/spack-stack.git</span>
 <span class="go">cd spack-stack</span>
-<span class="go">git checkout 1.4.1</span>
+<span class="go">git checkout 1.5.1</span>
 <span class="go">git submodule update --init --recursive</span>
+<span class="go">export SPACK_ROOT=/opt/spack-stack/spack</span>
 <span class="go">source setup.sh</span>
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">proj</span></code> package has bug and creates issue in the installation. Until <code class="docutils literal notranslate"><span class="pre">spack</span></code> submodule is
-updated under <code class="docutils literal notranslate"><span class="pre">spack-stack</span></code>, the following instructions can be used to fix the <code class="docutils literal notranslate"><span class="pre">proj</span></code> package.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd spack-stack/spack</span>
-<span class="go">git remote add upstream https://github.com/spack/spack.git</span>
-<span class="go">git fetch upstream</span>
-<span class="go">git cherry-pick upsream 149d194 (and resolve conflicts)</span>
-</pre></div>
-</div>
-</div>
 <ol class="arabic simple" start="4">
-<li><p>Install core dependencies</p></li>
+<li><p>Create spack environment and activate it</p></li>
 </ol>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd spack-stack</span>
-<span class="go">spack stack create env --site linux.default --template ufs-weather-model --name ufs.local --prefix /opt/ufs.local</span>
-<span class="go">cd envs/ufs.local/</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">spack stack create env --site linux.default --template ufs-weather-model --name ufs.local --prefix /opt/ufs.local</span>
+<span class="go">cd envs/ufs.local</span>
 <span class="go">spack env activate .</span>
 </pre></div>
 </div>
@@ -257,30 +277,28 @@ updated under <code class="docutils literal notranslate"><span class="pre">spack
 <p><code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">stack</span> <span class="pre">create</span> <span class="pre">env</span> <span class="pre">-h</span></code> shows the list of available environments.</p>
 </div>
 <ol class="arabic simple" start="5">
-<li><p>Find external packages/compilers</p></li>
+<li><p>Find external packages that are shipped through the OS and installed with <code class="docutils literal notranslate"><span class="pre">apt</span></code> package manager in Step (2).</p></li>
 </ol>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd spack-stack</span>
-<span class="go">export SPACK_SYSTEM_CONFIG_PATH=&quot;$PWD/envs/ufs.local/site&quot;</span>
-<span class="go">find --scope system --exclude bison --exclude cmake --exclude curl --exclude openssl --exclude openssh</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd /opt/spack-stack</span>
+<span class="go">export SPACK_SYSTEM_CONFIG_PATH=&quot;/opt/spack-stack/envs/ufs.local/site&quot;</span>
+<span class="go">spack external find --scope system --exclude bison --exclude cmake --exclude curl --exclude openssl --exclude openssh</span>
 <span class="go">spack external find --scope system perl</span>
 <span class="go">spack external find --scope system wget</span>
-<span class="go">spack external find --scope system mysql</span>
 <span class="go">spack external find --scope system texlive</span>
 <span class="go">spack compiler find --scope system</span>
 <span class="go">unset SPACK_SYSTEM_CONFIG_PATH</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="6">
-<li><p>Set default compiler and MPI library</p></li>
+<li><p>Set compiler and MPI library that will be used to install dependencies. In this example, GNU compiler and OpenMPI are used. The compiler and MPI library versions could change based on the version of the used OS. To that end, user needs to check compiler and MPI versions carefully. Following commands give some exmaple to find out the versions and addind them to the spack-stack configuration.</p></li>
 </ol>
-<p>The user need to check compiler and openmpi versions.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">gcc --version</span>
 <span class="go">spack config add &quot;packages:all:compiler:[gcc@YOUR-VERSION]&quot;</span>
 <span class="gp"># </span>Example
 <span class="go">spack config add &quot;packages:all:compiler:[gcc@11.4.0]&quot;</span>
 
 <span class="gp"># </span>Example<span class="w"> </span><span class="k">for</span><span class="w"> </span>Red<span class="w"> </span>Hat<span class="w"> </span><span class="m">8</span><span class="w"> </span>following<span class="w"> </span>the<span class="w"> </span>above<span class="w"> </span>instructions
-<span class="go">spack config add &quot;packages:all:providers:mpi:[openmpi@4.1.5]&quot;</span>
+<span class="go">spack config add &quot;packages:all:providers:mpi:[openmpi@4.1.6]&quot;</span>
 
 <span class="gp"># </span>Example<span class="w"> </span><span class="k">for</span><span class="w"> </span>Ubuntu<span class="w"> </span><span class="m">20</span>.04<span class="w"> </span>or<span class="w"> </span><span class="m">22</span>.04<span class="w"> </span>following<span class="w"> </span>the<span class="w"> </span>above<span class="w"> </span>instructions
 <span class="go">spack config add &quot;packages:all:providers:mpi:[mpich@4.1.1]&quot;</span>
@@ -293,11 +311,10 @@ updated under <code class="docutils literal notranslate"><span class="pre">spack
 <span class="go">spack config add &quot;packages:pixman:variants:+pic&quot;</span>
 <span class="go">spack config add &quot;packages:cairo:variants:+pic&quot;</span>
 <span class="go">spack config add &quot;packages:libffi:version:[3.3]&quot;</span>
-<span class="go">spack config add &quot;packages:flex:version:[2.6.4]&quot;</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="8">
-<li><p>Add additional dependencies for UFS Coastal Model</p></li>
+<li><p>Add additional dependencies to newly created spack environment for UFS Coastal</p></li>
 </ol>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">spack add parmetis@4.0.3~shared ^metis~shared</span>
 <span class="go">spack add proj@4.9.2~shared~tiff</span>
@@ -305,36 +322,77 @@ updated under <code class="docutils literal notranslate"><span class="pre">spack
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Since <code class="docutils literal notranslate"><span class="pre">parmetis</span></code> package depends on <code class="docutils literal notranslate"><span class="pre">metis</span></code>, it will also install <cite>metis&#64;5.1.0</cite> spack package.
-Also note that <code class="docutils literal notranslate"><span class="pre">metis&#64;5.1.0</span></code> is not compatible with ADCIRC and throw error like
-<code class="docutils literal notranslate"><span class="pre">undefined</span> <span class="pre">reference</span> <span class="pre">to</span> <span class="pre">metis_estimatememory_</span></code>.</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">parmetis</span></code> package depends on <code class="docutils literal notranslate"><span class="pre">metis</span></code>, it will also install <cite>metis&#64;5.1.0</cite> spack package. Also note that <code class="docutils literal notranslate"><span class="pre">metis&#64;5.1.0</span></code> is not compatible with ADCIRC and throw error like <code class="docutils literal notranslate"><span class="pre">undefined</span> <span class="pre">reference</span> <span class="pre">to</span> <span class="pre">metis_estimatememory_</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">proj</span></code> package had bug in spack-stack <code class="docutils literal notranslate"><span class="pre">1.4.1</span></code> version. This is fixed in recent version of the spack-stack (<code class="docutils literal notranslate"><span class="pre">&gt;=</span> <span class="pre">1.5.1`</span></code>) but <code class="docutils literal notranslate"><span class="pre">spack</span></code> submodule can be updated under <code class="docutils literal notranslate"><span class="pre">spack-stack</span></code> for older versions with the following instructions. Again, this is not needed for newer versions of spack-stack.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd spack-stack/spack</span>
+<span class="go">git remote add upstream https://github.com/spack/spack.git</span>
+<span class="go">git fetch upstream</span>
+<span class="go">git cherry-pick upsream 149d194 (and resolve conflicts)</span>
+</pre></div>
+</div>
 </div>
 <ol class="arabic simple" start="9">
-<li><p>Install packages</p></li>
+<li><p>Install packages and clean unneccecary files</p></li>
 </ol>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">spack concretize 2&gt;&amp;1 | tee log.concretize</span>
 <span class="go">spack install --source 2&gt;&amp;1 | tee log.install</span>
+<span class="go">spack gc -y  2&gt;&amp;1 | tee log.clean</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="10">
-<li><p>Create modules</p></li>
+<li><p>(Optional) To create module files for the dependencies, <a class="reference external" href="https://lmod.readthedocs.io/en/latest/">lmod</a> and <code class="docutils literal notranslate"><span class="pre">lua</span></code> needs to be installed. Following commands can be used to install them.</p></li>
 </ol>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">spack module tcl refresh</span>
+<p>To install <code class="docutils literal notranslate"><span class="pre">lua`</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd /opt</span>
+<span class="go">export LUA_VERSION=5.1.4.9</span>
+<span class="go">wget -c https://sourceforge.net/projects/lmod/files/lua-${LUA_VERSION}.tar.bz2</span>
+<span class="go">tar -xvf lua-${LUA_VERSION}.tar.bz2</span>
+<span class="go">cd lua-${LUA_VERSION}</span>
+<span class="go">./configure --prefix=/opt/lua</span>
+<span class="go">make</span>
+<span class="go">make install</span>
+</pre></div>
+</div>
+<p>To install <code class="docutils literal notranslate"><span class="pre">lmod`</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd /opt</span>
+<span class="go">export LMOD_VERSION=8.7</span>
+<span class="go">wget -c https://sourceforge.net/projects/lmod/files/Lmod-${LMOD_VERSION}.tar.bz2</span>
+<span class="go">tar -xvf Lmod-${LMOD_VERSION}.tar.bz2</span>
+<span class="go">cd Lmod-${LMOD_VERSION}</span>
+<span class="go">./configure --prefix=/opt/lmod --with-lua=/opt/lua/bin/lua --with-luac=/opt/lua/bin/luac --with-lua_include=/opt/lua/include</span>
+<span class="go">make</span>
+<span class="go">make install</span>
+</pre></div>
+</div>
+<p>Then, <code class="docutils literal notranslate"><span class="pre">lmod</span></code> can be activated with following commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /opt/lmod/lmod/${LMOD_VERSION}/init/profile</span>
+<span class="go">ln -sf /opt/lmod/lmod/${LMOD_VERSION}/init/profile /etc/profile.d/lmod.sh</span>
+</pre></div>
+</div>
+<p>After instaling <code class="docutils literal notranslate"><span class="pre">lmod</span></code> successfully, the module files for dependencies, which are installed by spack-stack can be created with following command,</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">spack module tcl refresh -y</span>
 <span class="go">spack stack setup-meta-modules</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="11">
-<li><p>Testing modules (Optional)</p></li>
+<li><p>(Optional) Testing module files that are created in Step (10)</p></li>
 </ol>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">. /etc/profile.d/modules.sh</span>
 <span class="go">module use /opt/ufs.local/modulefiles/Core</span>
 <span class="go">module load stack-gcc/11.4.0</span>
 <span class="go">module load stack-python/3.10.8</span>
-<span class="go">module load stack-openmpi/4.1.5</span>
+<span class="go">module load stack-openmpi/4.1.6</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Module names can be different if different versions of GNU compiler, MPI library and Python are installed.</p>
+</div>
 <ol class="arabic simple" start="12">
-<li><p>Clone UFS Coastal Model and create new module file</p></li>
+<li><p>Clone UFS Coastal Model and create new module file to support custom Docker installation</p></li>
 </ol>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd /opt</span>
 <span class="go">git clone -b feature/coastal_app --recursive https://github.com/oceanmodeling/ufs-coastal.git</span>
@@ -355,7 +413,7 @@ Also note that <code class="docutils literal notranslate"><span class="pre">meti
 
 <span class="go">module load stack-gcc/11.4.0</span>
 <span class="go">module load stack-python/3.10.8</span>
-<span class="go">module load stack-openmpi/4.1.5</span>
+<span class="go">module load stack-openmpi/4.1.6</span>
 
 <span class="go">module load jasper/2.0.32</span>
 <span class="go">module load zlib/1.2.13</span>
@@ -394,20 +452,25 @@ Also note that <code class="docutils literal notranslate"><span class="pre">meti
 </pre></div>
 </div>
 <ol class="arabic simple" start="13">
-<li><p>Building UFS Coastal Model specific configurations</p></li>
+<li><p>Testing build of UFS Coastal specific configurations</p></li>
 </ol>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd ufs-coastal/tests</span>
 
-<span class="gp"># </span>ADCIRC<span class="w"> </span><span class="o">(</span>it<span class="w"> </span>is<span class="w"> </span>not<span class="w"> </span>compatible<span class="w"> </span>with<span class="w"> </span>metis<span class="w"> </span><span class="m">5</span>.x<span class="w"> </span>at<span class="w"> </span>this<span class="w"> </span>point<span class="o">)</span>
+<span class="gp"># </span>ADCIRC<span class="w"> </span><span class="o">(</span>DATM+OCN,<span class="w"> </span>ADCIRC<span class="w"> </span>is<span class="w"> </span>not<span class="w"> </span>compatible<span class="w"> </span>with<span class="w"> </span>Metis<span class="w"> </span><span class="m">5</span>.x<span class="w"> </span>at<span class="w"> </span>this<span class="w"> </span>point<span class="o">)</span>
 <span class="go">./compile.sh &quot;local&quot; &quot;-DAPP=CSTLA -DBUILD_ADCPREP=ON -DADCIRC_CONFIG=PADCIRC -DCOUPLED=ON&quot; coastal gnu NO NO</span>
 
-<span class="gp"># </span>FVCOM
+<span class="gp"># </span>FVCOM<span class="w"> </span><span class="o">(</span>DATM+OCN<span class="o">)</span>
 <span class="go">./compile.sh &quot;local&quot; &quot;-DAPP=CSTLF -DCOORDINATE_TYPE=SPHERICAL -DWET_DRY=ON&quot; coastal gnu NO NO</span>
 
-<span class="gp"># </span>SCHISM
+<span class="gp"># </span>SCHISM<span class="w"> </span><span class="o">(</span>DATM+OCN<span class="o">)</span>
 <span class="go">./compile.sh &quot;local&quot; &quot;-DAPP=CSTLS -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON&quot; coastal gnu NO NO</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In addition to the steps that are explained above, the UFS Coastal RT system needs to be adjusted to support running RT under Docker container. This part is not covered by the documentation.</p>
+</div>
+</section>
 </section>
 </section>
 
