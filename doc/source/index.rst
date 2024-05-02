@@ -18,5 +18,7 @@ Table of contents
    :maxdepth: 2
    :numbered:
 
-   introduction.rst
-   porting.rst
+   Introduction.rst
+   BuildingAndRunning.rst
+   Configurations.rst
+   PortingModel.rst
