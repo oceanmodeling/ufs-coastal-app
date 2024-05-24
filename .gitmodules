@@ -1,4 +1,4 @@
-[submodule "sorc/ufs-coastal"]
-  path = sorc/ufs-coastal
-  url = https://github.com/oceanmodeling/ufs-coastal.git
+[submodule "sorc/ufs-weather-model"]
+  path = sorc/ufs-weather-model
+  url = https://github.com/oceanmodeling/ufs-weather-model.git
   branch = feature/coastal_app
