@@ -13,7 +13,7 @@ if(NOT DEFINED CMAKE_INSTALL_BINDIR)
 endif()
 
 # Append UFS model modules to find required packages
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/sorc/ufs-coastal/CMakeModules/Modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/sorc/ufs-weather-model/CMakeModules/Modules)
 
 # Add sub-directory
-add_subdirectory(sorc/ufs-coastal)
+add_subdirectory(sorc/ufs-weather-model)

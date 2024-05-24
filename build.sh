@@ -184,7 +184,7 @@ if [ ! -z "${APPLICATION}" ]; then
     CMAKE_SETTINGS="${CMAKE_SETTINGS} -DMY_CPP_FLAGS=BULK_FLUXES" 
   # schism
   elif [ "${APPLICATION}" == "CSTLS" ]; then
-    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON"
+    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON -DBUILD_UTILS=ON"
   fi
 fi
 
@@ -201,7 +201,7 @@ fi
 
 # load modules
 module purge
-module use ${APP_DIR}/sorc/ufs-coastal/modulefiles
+module use ${APP_DIR}/sorc/ufs-weather-model/modulefiles
 load_module "ufs_"
 module li
 
@@ -258,8 +258,9 @@ else
 fi
 
 # move executables
-if [ -f "${BUILD_DIR}/sorc/ufs-coastal/ufs_model" ]; then
+if [ -f "${BUILD_DIR}/sorc/ufs-weather-model/ufs_model" ]; then
   printf "Moving executables to final locations ...\n"
   mkdir -p ${INSTALL_DIR}/${BIN_DIR}
-  mv ${BUILD_DIR}/sorc/ufs-coastal/ufs_model ${INSTALL_DIR}/${BIN_DIR}/.
+  mv ${BUILD_DIR}/sorc/ufs-weather-model/ufs_model ${INSTALL_DIR}/${BIN_DIR}/.
+  mv ${BUILD_DIR}/bin/* ${INSTALL_DIR}/${BIN_DIR}/.
 fi
