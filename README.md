@@ -14,7 +14,7 @@ Here, model component means a forecast component (e.g. coastal ocean model) that
 * [Contributing code to the UFS (EPIC)](https://github.com/ufs-community/ufs/wiki)
 
 # Supported model components
-Model components currently supported on top of ufs-weather-model components are as follows. Each model component is provided as a submodule via forks of the authoritive model repos. UFS-related model component issues are handled within these forks:
+Model components currently supported on top of ufs-weather-model components are as follows. Each model component is provided as a submodule via forks of the authoritative model repos. UFS-related model component issues are handled within these forks:
 
 [ADCIRC](https://github.com/oceanmodeling/adcirc)\
 [SCHISM](https://github.com/oceanmodeling/schism)\
@@ -23,7 +23,7 @@ Model components currently supported on top of ufs-weather-model components are 
 [FVCOM](https://github.com/oceanmodeling/FVCOM)
 
 # Points of contact
-Points of contact & repos for specific questions regarding each model component, as well as NOAA and NCAR project teams, are listed below. The authortive model repositories are also linked below. 
+Points of contact & repos for specific questions regarding each model component, as well as NOAA and NCAR project teams, are listed below. The authoritative model repositories are also linked below. 
 
 [ADCIRC](https://github.com/adcirc/adcirc)\
 Damrongsak Wirasaet (dwirasae@nd.edu)\
@@ -50,7 +50,7 @@ Ali Salimi (ali.salimi@noaa.gov)\
 Ali Abdolali (Ali.Abdolali@erdc.dren.mil)
 
 **NOAA NOS dev team**\
-Panagiotis Velissariou (panagiotis.velissariou@noaa.gov)\	
+Panagiotis Velissariou (panagiotis.velissariou@noaa.gov)\
 Jana Haddad (jana.haddad@noaa.gov)\
 Yunfang Sun (yunfang.sun@noaa.gov)\
 Saeed Moghimi (saeed.moghimi@noaa.gov)\
@@ -58,7 +58,7 @@ Armaghan Abed-Elmdoust (armaghan.abed-elmdoust@noaa.gov)
 
 **NCAR dev team**\
 Ufuk Turuncoglu (turuncu@ucar.edu)\
-Daniel Rosen (drosen@ucar.edu)\		
+Daniel Rosen (drosen@ucar.edu)\
 Ann Tsay (atsay@ucar.edu)					
 
 # References
