@@ -88,7 +88,7 @@ fi
 
 # default settings
 APP_DIR=$(cd "$(dirname "$(readlink -f -n "${BASH_SOURCE[0]}" )" )" && pwd -P)
-BIN_DIR="bin"
+BIN_DIR=${BIN_DIR:-${APP_DIR}/install/bin}
 BUILD_DIR="${BUILD_DIR:-${APP_DIR}/build}"
 BUILD_JOBS=4
 BUILD_TYPE="RELEASE"
@@ -260,7 +260,7 @@ fi
 # move executables
 if [ -f "${BUILD_DIR}/sorc/ufs-weather-model/ufs_model" ]; then
   printf "Moving executables to final locations ...\n"
-  mkdir -p ${INSTALL_DIR}/${BIN_DIR}
-  mv ${BUILD_DIR}/sorc/ufs-weather-model/ufs_model ${INSTALL_DIR}/${BIN_DIR}/.
-  mv ${BUILD_DIR}/bin/* ${INSTALL_DIR}/${BIN_DIR}/.
+  mkdir -p ${BIN_DIR}
+  mv ${BUILD_DIR}/sorc/ufs-weather-model/ufs_model ${BIN_DIR}/.
+  mv ${BUILD_DIR}/bin/* ${BIN_DIR}/.
 fi
