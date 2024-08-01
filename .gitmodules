@@ -2,3 +2,7 @@
   path = sorc/ufs-weather-model
   url = https://github.com/oceanmodeling/ufs-weather-model.git
   branch = feature/coastal_app
+[submodule "sorc/uwtools"]
+  path = sorc/uwtools
+  url = https://github.com/oceanmodeling/uwtools.git
+  branch = main
