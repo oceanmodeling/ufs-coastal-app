@@ -7,8 +7,7 @@ Usage: $0 --platform=PLATFORM [OPTIONS] ... [TARGETS]
 
 OPTIONS
   -a, --app=APPLICATION
-      weather model application to build; for example, ATMAQ for Online-CMAQ
-      (e.g. CSTLS)
+      weather model application to build; for example, CSTLS for DATM+SCHISM 
   --bin-dir=BIN_DIR
       installation binary directory name ("bin" by default; any name is available)
   -b, --build-dir=BUILD_DIR
