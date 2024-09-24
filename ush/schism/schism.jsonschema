@@ -1,0 +1,51 @@
+{
+  "properties": {
+    "schism": {
+      "additionalProperties": false,
+      "properties": {
+        "namelist": {
+          "additionalProperties": false,
+          "properties": {
+            "template_file": {
+              "type": "string"
+            },
+            "template_values": {
+              "minProperties": 1,
+              "type": "object"
+            }
+          },
+          "required": [
+            "template_file"
+          ],
+          "type": "object"
+        },
+        "hgrid": {
+          "type": "string"
+        },
+        "vgrid": {
+          "type": "string"
+        },
+        "boundary_vars": {
+          "type": [
+            "boolean",
+            "array"
+          ]
+        },
+        "rundir": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namelist",
+        "rundir",
+        "hgrid",
+        "vgrid"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schism"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,71 @@
+dir:
+  model: ../sorc/ufs-weather-model
+  run: run
+platform:
+  account: nems
+  scheduler: slurm
+coastal:
+  execution:
+    batchargs:
+      cores: 6 
+      exclusive: True
+      export: NONE
+      jobname: my-job
+      nodes: 1
+      partition: hercules
+      queue: batch
+      stderr: 'err'
+      stdout: 'out'
+      tasks_per_node: 6
+      walltime: '00:30:00'
+    envcmds:
+      - module use {{ dir.model }}/modulefiles
+      - module load ufs_hercules.intel
+    executable: ../install/bin/ufs_model
+    mpiargs:
+      - '--export=ALL'
+      - '--ntasks 6'
+      - '--account=nems'
+    mpicmd: srun
+  rundir: '{{ dir.run }}'
+cdeps:
+  atm_in:
+    update_values:
+      datm_nml:
+        datamode: ATMMESH
+        export_all: true
+        factorfn_data: 'null'
+        factorfn_mesh: 'null'
+        flds_co2: false
+        flds_presaero: false
+        flds_wiso: false
+        iradsw: 1
+        model_maskfile: INPUT/esmf_mesh.nc
+        model_meshfile: INPUT/esmf_mesh.nc
+        nx_global: 101
+        ny_global: 101
+        restfilm: 'null'
+  atm_streams:
+    streams:
+      stream01:
+        dtlimit: 1.5
+        mapalgo: redist
+        readmode: single
+        stream_data_files: [INPUT/data.nc]
+        stream_data_variables: [uwnd Sa_u10m, vwnd Sa_v10m, P Sa_pslv ]
+        stream_lev_dimname: 'null'
+        stream_mesh_file: INPUT/esmf_mesh.nc
+        stream_offset: 0
+        stream_vectors: ['null', 'null']
+        taxmode: limit 
+        tinterpalgo: linear
+        yearAlign: 2008
+        yearFirst: 2008
+        yearLast: 2008
+    template_file: ../templates/cdeps_streams.j2
+schism:
+  hgrid: 'hgrid.gr3'
+  vgrid: 'vgrid.in'
+  boundary_vars: [True, False, True]
+  namelist:
+    template_file: ../templates/schism_param_nml.j2
