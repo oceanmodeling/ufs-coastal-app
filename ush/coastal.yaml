@@ -66,6 +66,7 @@ cdeps:
 schism:
   hgrid: 'hgrid.gr3'
   vgrid: 'vgrid.in'
-  boundary_vars: [True, False, True]
+  boundary_vars: [True, True, True]
+  ocean_bnd_ids: [0]
   namelist:
     template_file: ../templates/schism_param_nml.j2

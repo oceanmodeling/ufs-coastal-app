@@ -4,7 +4,7 @@ from uwtools.logging import log
 from pyschism.mesh.hgrid import Hgrid
 from pyschism.forcing.hycom.hycom2schism import OpenBoundaryInventory
 
-def execute(hgrid_file, vgrid_file, start_date, rnday, ocean_bnd_ids, output_dir="./", elev=True, ts=True, uv=True):
+def execute(hgrid_file, vgrid_file, start_date, rnday, ocean_bnd_ids, output_dir="./", output_vars=[True,True,True]):
     '''
     outputs:
         elev2D.th.nc (elev=True)
@@ -26,4 +26,4 @@ def execute(hgrid_file, vgrid_file, start_date, rnday, ocean_bnd_ids, output_dir
         sys.exit()
     # create open boundary data files
     # ocean_bnd_ids - segment indices, starting from zero
-    bnd.fetch_data(output_dir, start_date, rnday, elev2D=elev, TS=ts, UV=uv, ocean_bnd_ids=ocean_bnd_ids)
+    bnd.fetch_data(output_dir, start_date, rnday, elev2D=output_vars[0], TS=output_vars[1], UV=output_vars[2], ocean_bnd_ids=ocean_bnd_ids)

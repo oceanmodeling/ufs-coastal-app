@@ -26,10 +26,18 @@
           "type": "string"
         },
         "boundary_vars": {
-          "type": [
-            "boolean",
-            "array"
-          ]
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+           "type": "boolean"
+          }
+        },
+        "ocean_bnd_ids": {
+          "type": "array",
+          "items": {
+           "type": "number"
+          }
         },
         "rundir": {
           "type": "string"
@@ -39,7 +47,9 @@
         "namelist",
         "rundir",
         "hgrid",
-        "vgrid"
+        "vgrid",
+        "boundary_vars",
+        "ocean_bnd_ids"
       ],
       "type": "object"
     }
