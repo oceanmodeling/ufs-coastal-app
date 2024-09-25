@@ -49,8 +49,8 @@ class Coastal(DriverCycleBased):
         yield [
                 #cdeps.atm_nml(),
                 #cdeps.atm_stream(),
-                #self.schism_bnd_inputs(),
-                self.schism_gr3_inputs(),
+                self.schism_bnd_inputs(),
+                #self.schism_gr3_inputs(),
                 #schism.namelist_file(),
                 #self.linked_files(),
                 #self.restart_dir(),
@@ -78,21 +78,10 @@ class Coastal(DriverCycleBased):
         vgrid = self.config_full["schism"]["vgrid"]
         ocean_bnd_ids = self.config_full["schism"]["ocean_bnd_ids"]
         bnd_vars = self.config_full["schism"]["boundary_vars"]
-        bnd_vars_name = ['elev2D', 'TS', 'UV']
-        bnd_vars_dict = dict(zip(bnd_vars_name, bnd_vars))
-        bnd_vars_active = [key for key,val in bnd_vars_dict.items() if val]
-        bnd_files = []
-        for bnd_var in bnd_vars_active:
-            if bnd_var == 'elev2D':
-                bnd_files.append('elev2D.th.nc')
-            elif bnd_var == 'TS':
-                bnd_files.append('SAL_3D.th.nc')
-                bnd_files.append('TEM_3D.th.nc')
-            elif bnd_var == 'UV':
-                bnd_files.append('uv3D.th.nc')
         yield self.taskname("SCHSIM boundary files")
-        gen_bnd.execute(hgrid, vgrid, self.cycle, 1, ocean_bnd_ids=ocean_bnd_ids, output_dir=self.rundir, output_vars=bnd_vars)
-        yield [asset(path(fn), path(fn).is_file) for fn in bnd_files]
+        _files = gen_bnd.execute(hgrid, vgrid, self.cycle, 1, ocean_bnd_ids=ocean_bnd_ids, output_dir=self.rundir, output_vars=bnd_vars)
+        print(_files)
+        yield [asset(path(fn), path(fn).is_file) for fn in _files]
         yield None
 
     @task
@@ -100,9 +89,12 @@ class Coastal(DriverCycleBased):
         """
         Generate gr3 input files
         """
+        path = lambda fn: self.rundir / fn
         hgrid = self.config_full["schism"]["hgrid"]
         yield self.taskname("SCHSIM gr3 files")
-        gen_gr3.execute(hgrid, "description", output_dir=self.rundir)
+        _files = gen_gr3.execute(hgrid, "description", output_dir=self.rundir)
+        print(_files)
+        yield [asset(path(fn), path(fn).is_file) for fn in _files]
         yield None
 
     def driver_name(self):
