@@ -64,9 +64,18 @@ cdeps:
         yearLast: 2008
     template_file: ../templates/cdeps_streams.j2
 schism:
-  hgrid: 'hgrid.gr3'
-  vgrid: 'vgrid.in'
+  hgrid: ../tests/shinnecock/hgrid.gr3
+  vgrid: ../tests/shinnecock/vgrid.in
   boundary_vars: [True, True, True]
   ocean_bnd_ids: [0]
+  bctides:
+    tpxo_dir: /work/noaa/nosofs/mjisan/pyschism-main/PySCHISM_tutorial/data/TPXO
+    bctypes: [[3, 0, 0, 0]]
+    constituents: ['Q1','O1','P1','K1','N2','M2','S2','K2','Mm','Mf','M4','MN4','MS4','2N2','S1']  
+    database: 'tpxo'
   namelist:
     template_file: ../templates/schism_param_nml.j2
+input:
+  forcing: hrrr
+  length: 3
+  fxx: 0

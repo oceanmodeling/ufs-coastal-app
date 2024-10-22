@@ -1,0 +1,149 @@
+{
+  "properties": {
+    "schism": {
+      "additionalProperties": false,
+      "properties": {
+        "namelist": {
+          "additionalProperties": false,
+          "properties": {
+            "template_file": {
+              "type": "string"
+            },
+            "template_values": {
+              "minProperties": 1,
+              "type": "object"
+            }
+          },
+          "required": [
+            "template_file"
+          ],
+          "type": "object"
+        },
+        "hgrid": {
+          "type": "string"
+        },
+        "vgrid": {
+          "type": "string"
+        },
+        "boundary_vars": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "ocean_bnd_ids": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "bctides": {
+          "additionalProperties": false,
+          "properties": {
+            "tpxo_dir": {
+              "type": "string"
+            },
+            "bctypes": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "constituents": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "database": {
+              "enum": [
+                "tpxo",
+                "fes2014"
+              ]
+            },
+            "earth_tidal_potential": {
+              "type": "boolean"
+            },
+            "elevation_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "discharge_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "relaxation_inflow": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "relaxation_outflow": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "temperature_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "temperature_nudging": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "salinity_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "salinity_nudging": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "cutoff_depth": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "tpxo_dir"
+          ],
+          "type": "object"
+        },
+        "rundir": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namelist",
+        "rundir",
+        "hgrid",
+        "vgrid",
+        "boundary_vars",
+        "ocean_bnd_ids",
+        "bctides"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schism"
+  ],
+  "type": "object"
+}
