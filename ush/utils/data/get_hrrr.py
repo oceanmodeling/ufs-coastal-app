@@ -12,7 +12,7 @@ EPSILON = timedelta(seconds=5)
 searchString = '(:[U|V]GRD:10 m|:MSLMA:)'
 logger = logging.getLogger('hrrr')
 
-def download(cfg, cycle, bbox, combine=False, output_dir='./'):
+def download(cfg, cycle, bbox=[], combine=False, esmf_mesh=True, output_dir='./'):
     now = cycle
     end = cycle + timedelta(hours=cfg['length'])
     date_set = set()
@@ -27,7 +27,7 @@ def download(cfg, cycle, bbox, combine=False, output_dir='./'):
     file_set = set()
     for date in date_list:
         try:
-            ofile = get(date, cfg['fxx'], bbox, output_dir)
+            ofile = get(date, cfg, bbox, output_dir)
             file_set.add(ofile)
         except Exception as ex:
             logger.error(f'Download failed for {date}: {ex}', exc_info=ex)
@@ -41,14 +41,20 @@ def download(cfg, cycle, bbox, combine=False, output_dir='./'):
     else:
         return file_list
 
-def get(date, fxx, bbox, output_dir):
-    H = Herbie(date=date, model='hrrr', product='sfc', fxx=0, save_dir=output_dir)
+def get(date, cfg, bbox, output_dir):
+    if cfg['source'].lower() == 'hrrr':
+        H = Herbie(date=date, model='hrrr', product='sfc', fxx=cfg['fxx'], save_dir=output_dir)
+    elif cfg['source'].lower() == 'gfs':
+        H = Herbie(date=date, model='gfs', fxx=cfg['fxx'], save_dir=output_dir)
     lfile = H.download(search=searchString)
     if os.path.isfile(lfile):
         dirname = os.path.dirname(lfile)
         ofile = os.path.join(dirname, datetime.strptime(date, '%Y-%m-%d %H:%M').strftime('%Y%m%d_%Hz') + '.nc')
         ds = xr.open_dataset(lfile, engine='cfgrib')
-        bbox_ext = [bbox[0] * 0.95, bbox[1] * 1.1, bbox[2] * 0.95, bbox[3] * 1.1]
-        ds_subset = ds.where((ds.latitude > bbox_ext[2]) & (ds.latitude < bbox_ext[3]) & (ds.longitude > bbox_ext[0]) & (ds.longitude < bbox_ext[1]), drop=True)
-        ds_subset.to_netcdf(ofile)
+        if not bbox:
+            ds.to_netcdf(ofile)
+        else:
+            bbox_ext = [bbox[0], bbox[1], bbox[2], bbox[3]]
+            ds_subset = ds.where((ds.latitude > bbox_ext[2]) & (ds.latitude < bbox_ext[3]) & (ds.longitude > bbox_ext[0]) & (ds.longitude < bbox_ext[1]), drop=True)
+            ds_subset.to_netcdf(ofile)
     return ofile
