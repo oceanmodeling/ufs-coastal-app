@@ -12,7 +12,7 @@ EPSILON = timedelta(seconds=5)
 searchString = '(:[U|V]GRD:10 m|:MSLMA:)'
 logger = logging.getLogger('hrrr')
 
-def download(cfg, cycle, bbox=[], combine=False, esmf_mesh=True, output_dir='./'):
+def download(cfg, cycle, bbox=[], combine=False, output_dir='./'):
     now = cycle
     end = cycle + timedelta(hours=cfg['length'])
     date_set = set()
@@ -52,9 +52,9 @@ def get(date, cfg, bbox, output_dir):
         ofile = os.path.join(dirname, datetime.strptime(date, '%Y-%m-%d %H:%M').strftime('%Y%m%d_%Hz') + '.nc')
         ds = xr.open_dataset(lfile, engine='cfgrib')
         if not bbox:
+            logger.info('Skip subsetting data ...')
             ds.to_netcdf(ofile)
         else:
-            bbox_ext = [bbox[0], bbox[1], bbox[2], bbox[3]]
-            ds_subset = ds.where((ds.latitude > bbox_ext[2]) & (ds.latitude < bbox_ext[3]) & (ds.longitude > bbox_ext[0]) & (ds.longitude < bbox_ext[1]), drop=True)
-            ds_subset.to_netcdf(ofile)
+            logger.info('Subset data based on given bounding box {}'.format(bbox))
+            logger.error('This is not supported currently')
     return ofile

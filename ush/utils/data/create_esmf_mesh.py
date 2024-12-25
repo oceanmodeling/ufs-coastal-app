@@ -4,27 +4,19 @@ try:
     from datetime import datetime
     import numpy as np
     import xarray as xr
+    import dask.array as da
+    import dask.dataframe as dd
+    import subprocess
 except ImportError as ie:
     sys.stderr.write(str(ie))
     exit(2)
 
-def mirrorP2P(p1, p0):
-    """
-    This functions calculates the mirror of p1 with respect to po
-    """
-    dVec = p1-p0
-    return(p0-dVec)
-
-def to_scrip(fin, mask_var=None, fout='scrip.nc'):
-    """
-    Writes grid in SCRIP grid definition file format
-    """
-
+def gen_grid_def(ifile, mask_var=None, ff='scrip', output_dir='./'):
     # Open input file
-    if os.path.isfile(fin):
-        ds = xr.open_dataset(fin, mask_and_scale=False, decode_times=False)
+    if os.path.isfile(ifile):
+        ds = xr.open_dataset(ifile, mask_and_scale=False, decode_times=False)
     else:
-        print('Input file could not find!')
+        print('Input file {} could not find!'.format(ifile))
         exit(2)
 
     # Get coordinate information
@@ -41,25 +33,42 @@ def to_scrip(fin, mask_var=None, fout='scrip.nc'):
         ny = yc.size
         xc = xc.expand_dims(dim={'y': ny}).to_numpy()
         yc = yc.expand_dims(dim={'x': nx}).transpose().to_numpy()
+    else:
+        xc = xc.to_numpy()
+        yc = yc.to_numpy()
 
     # Get mask information
     if mask_var:
         mc = np.ndarray.flatten(ds[mask_var].to_numpy())
     else:
-        mc = np.ones(xc.size)
+        mc = np.ones(xc.size, dtype=np.int32)
 
     # Calculate corner coordinates
     xc_1, yc_1, xo_2, yo_2 = calc_corners(xc, yc)
+
+    # Write to file 
+    if ff == 'mesh':
+        ofile = to_scrip(xc_1, yc_1, xo_2, yo_2, mc, xc.shape[::-1], output_dir=output_dir)
+        ofile = scrip_to_mesh(ofile, output_dir=output_dir)
+    else:
+        ofile = to_scrip(xc_1, yc_1, xo_2, yo_2, mc, xc.shape[::-1], output_dir=output_dir)
+
+    return({'output_file': ofile, 'shape': xc.shape[::-1]})
+
+def to_scrip(xc, yc, xo, yo, mc, dims, fout='scrip.nc', output_dir='./'):
+    """
+    Writes grid in SCRIP format
+    """
 
     # Create new dataset in SCRIP format
     out = xr.Dataset()
 
     # Fill with data
-    out['grid_dims'] = xr.DataArray(np.array(xc.shape[::-1], dtype=np.int32), dims=('grid_rank',))
-    out['grid_center_lon'] = xr.DataArray(xc_1, dims=('grid_size'), attrs={'units': 'degrees'})
-    out['grid_center_lat'] = xr.DataArray(yc_1, dims=('grid_size'), attrs={'units': 'degrees'})
-    out['grid_corner_lon'] = xr.DataArray(xo_2, dims=('grid_size','grid_corners'), attrs={'units': 'degrees'})
-    out['grid_corner_lat'] = xr.DataArray(yo_2, dims=('grid_size','grid_corners'), attrs={'units': 'degrees'})
+    out['grid_dims'] = xr.DataArray(np.array(dims, dtype=np.int32), dims=('grid_rank',))
+    out['grid_center_lon'] = xr.DataArray(xc, dims=('grid_size'), attrs={'units': 'degrees'})
+    out['grid_center_lat'] = xr.DataArray(yc, dims=('grid_size'), attrs={'units': 'degrees'})
+    out['grid_corner_lon'] = xr.DataArray(xo, dims=('grid_size','grid_corners'), attrs={'units': 'degrees'}).astype(dtype=np.float64, order='F')
+    out['grid_corner_lat'] = xr.DataArray(yo, dims=('grid_size','grid_corners'), attrs={'units': 'degrees'}).astype(dtype=np.float64, order='F')
     out['grid_imask'] = xr.DataArray(mc, dims=('grid_size'), attrs={'units': 'unitless'})
 
     # Force no '_FillValue' if not specified
@@ -68,14 +77,36 @@ def to_scrip(fin, mask_var=None, fout='scrip.nc'):
             out[v].encoding['_FillValue'] = None    
 
     # Add global attributes
-    out.attrs = {'title': 'Grid with {} size'.format('x'.join(list(map(str,xc_1.shape)))),
+    out.attrs = {'title': 'Grid with {} size'.format('x'.join(list(map(str,dims)))),
                  'created_by': os.path.basename(__file__),
                  'date_created': '{}'.format(datetime.now()),
                  'conventions': 'SCRIP'}
 
     # Write dataset
-    if fout is not None:
-        out.to_netcdf(fout)
+    ofile = os.path.join(output_dir, fout)
+    out.to_netcdf(ofile)
+    return(ofile)
+
+def scrip_to_mesh(ifile, fout='mesh.nc', output_dir='./'):
+    """
+    Convert scrip.nc to ESMF mesh format using ESMF_Scrip2Unstruct tool
+    """
+    # Set output file name
+    ofile = os.path.join(output_dir, fout)
+
+    # Check ESMFMKFILE environment variable to find out location of executable
+    if os.environ['ESMFMKFILE']:
+        # Open file and parse it
+        with open(os.environ['ESMFMKFILE']) as f:
+            bindir = [x.strip().split('=')[1] for x in f.readlines() if 'ESMF_APPSDIR' in x]
+            # Run command
+            if bindir:
+                cmd = [ os.path.join(bindir[0], 'ESMF_Scrip2Unstruct'), ifile, ofile, '0' ]
+                print(cmd)
+                result = subprocess.run(cmd)
+                result.check_returncode()
+
+    return(ofile)
 
 def calc_corners(xc, yc, delta=0.25):
     """
@@ -137,22 +168,31 @@ def calc_corners(xc, yc, delta=0.25):
     yo = delta*(yo[1:ny_ext,:]+yo[0:ny_ext-1,:])
 
     # Create flattened version of corner coordinates
-    ii = np.ndarray.flatten(np.tile(np.arange(nx), (ny,1)))
-    jj = np.ndarray.flatten(np.tile(np.arange(ny), (1,nx)))
-    xo_new = np.zeros((xc.size, 4))
-    yo_new = np.zeros((yc.size, 4))
-    nxp1 = nx+1
-    xo_new[:,0] = np.ndarray.flatten(np.ndarray.flatten(xo)[jj*nxp1+ii])
-    xo_new[:,1] = np.ndarray.flatten(np.ndarray.flatten(xo)[jj*nxp1+(ii+1)])
-    xo_new[:,2] = np.ndarray.flatten(np.ndarray.flatten(xo)[(jj+1)*nxp1+(ii+1)])
-    xo_new[:,3] = np.ndarray.flatten(np.ndarray.flatten(xo)[(jj+1)*nxp1+ii])
-    yo_new[:,0] = np.ndarray.flatten(np.ndarray.flatten(yo)[jj*nxp1+ii])
-    yo_new[:,1] = np.ndarray.flatten(np.ndarray.flatten(yo)[jj*nxp1+(ii+1)])
-    yo_new[:,2] = np.ndarray.flatten(np.ndarray.flatten(yo)[(jj+1)*nxp1+(ii+1)])
-    yo_new[:,3] = np.ndarray.flatten(np.ndarray.flatten(yo)[(jj+1)*nxp1+ii])    
+    kernel = np.array([[1,1], [1,1]])
+    xo = arrays_from_kernel(xo, kernel).reshape(ny,nx,-1).reshape(-1,kernel.size)
+    xo = xo[:,[0, 1, 3, 2]]
+    yo = arrays_from_kernel(yo, kernel).reshape(ny,nx,-1).reshape(-1,kernel.size)
+    yo = yo[:,[0, 1, 3, 2]]
 
     # Return flatten arrays
     return(np.ndarray.flatten(xc),
            np.ndarray.flatten(yc),
-           xo_new,
-           yo_new)
+           xo,
+           yo)
+
+def mirrorP2P(p1, p0):
+    """
+    This functions calculates the mirror of p1 with respect to po
+    """
+    dVec = p1-p0
+    return(p0-dVec)
+
+def arrays_from_kernel(arr, kernel):
+    windows = sliding_window(arr, kernel.shape)
+    return np.where(kernel, windows, 0)
+
+def sliding_window(data, win_shape, **kwargs):
+    assert data.ndim == len(win_shape)
+    shape = tuple(dn - wn + 1 for dn, wn in zip(data.shape, win_shape)) + win_shape
+    strides = data.strides * 2
+    return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides, **kwargs)
