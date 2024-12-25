@@ -1,0 +1,46 @@
+#############################################
+####  NEMS Run-Time Configuration File  #####
+#############################################
+
+# ESMF #
+logKindFlag:            ESMF_LOGKIND_MULTI
+globalResourceControl:  true
+
+# EARTH #
+EARTH_component_list: {{ config.driver.componentList | join(' ') }}
+EARTH_attributes::
+{%- for key, val in config.driver.attributes.items() %}
+  {{ key }} = {{ val }}
+{% endfor -%}
+::
+
+{%- for key, val in config.items() -%}
+{% if key.upper() != "DRIVER" -%}
+# {{ key.upper() }} #
+{{ key.upper() }}_model: {{ val.model }}
+{{ key.upper() }}_petlist_bounds: {{ val.petlist_bounds | replace("-", " ") }}
+{{ key.upper() }}_omp_num_threads: 1
+{{ key.upper() }}_attributes::
+{%- if key.upper() == "MED" %}
+{%- for model in config.driver.componentList %}
+  {{ model }}_model = {{ config[model.lower()].model }}
+{%- endfor -%}
+{%- endif %}
+{%- for akey, aval in val.attributes.items() %}
+  {{ akey }} = {{ aval }}
+{%- endfor %}
+::
+{%- endif %}
+
+{% endfor %}
+
+# Run Sequence # 
+runSeq::
+  {{ config.driver.runSequence }}
+::
+
+ALLCOMP_attributes::
+{%- for key, val in config.driver.allcomp.attributes.items() %}
+  {{ key }} = {{ val }}
+{%- endfor %}
+::
