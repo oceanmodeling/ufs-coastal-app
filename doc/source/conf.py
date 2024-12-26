@@ -109,9 +109,9 @@ html_theme = "sphinx_rtd_theme"
 # names to html links. The current version can link to the current location (i.e., do
 # nothing). For the other version, we just add a place-holder; its name and value are
 # unimportant because these versions will get replaced dynamically.
-html_theme_options = {}
-html_theme_options["versions"] = {version: ""}
-html_theme_options["versions"]["[placeholder]"] = ""
+#html_theme_options = {}
+#html_theme_options["versions"] = {version: ""}
+#html_theme_options["versions"]["[placeholder]"] = ""
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
