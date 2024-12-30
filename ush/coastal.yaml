@@ -136,8 +136,8 @@ cdeps:
         yearLast: 2024
     template_file: ../templates/cdeps.streams
 schism:
-  hgrid: ../tests/shinnecock/hgrid.gr3
-  vgrid: ../tests/shinnecock/vgrid.in
+  hgrid: '{{ dir.data }}/hgrid.gr3'
+  vgrid: '{{ dir.data }}/vgrid.in'
   boundary_vars: [True, True, True]
   ocean_bnd_ids: [0]
   bctides:
@@ -154,4 +154,4 @@ input:
   source: hrrr
   length: 25
   fxx: 0
-  subset: false
+  subset: true

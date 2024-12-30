@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from datetime import timedelta
 from herbie import Herbie
+import numpy as np
 import xarray as xr
 import logging
 import warnings
@@ -34,7 +35,7 @@ def download(cfg, cycle, bbox=[], combine=False, output_dir='./'):
     file_list = list(file_set)
     file_list.sort()
     if combine:
-        ds = xr.open_mfdataset(file_list, combine='nested', concat_dim='time')
+        ds = xr.open_mfdataset(file_list, combine='nested', concat_dim='time', coords='minimal', compat='override')
         ofile = os.path.join(output_dir, 'combined.nc')
         ds.to_netcdf(ofile)
         return ofile
@@ -53,8 +54,25 @@ def get(date, cfg, bbox, output_dir):
         ds = xr.open_dataset(lfile, engine='cfgrib')
         if not bbox:
             logger.info('Skip subsetting data ...')
-            ds.to_netcdf(ofile)
         else:
-            logger.info('Subset data based on given bounding box {}'.format(bbox))
-            logger.error('This is not supported currently')
+            min_lon, min_lat, max_lon, max_lat = bbox
+            logger.info('Subset data based on given bounding box')
+            logger.info('min_lon = {}, min_lat = {} , max_lon = {}, max_lat = {}'.format(min_lon, min_lat, max_lon, max_lat))
+            if 'lat' in ds.coords:
+                lat = ds['lat']
+            elif 'latitude' in  ds.coords:
+                lat = ds['latitude']
+            if 'lon' in ds.coords:
+                lon = ds['lon']
+            elif 'longitude' in ds.coords:
+                lon = ds['longitude']
+            mask = (lat >= min_lat) & (lat <= max_lat) & (lon >= min_lon) & (lon <= max_lon)
+            indx = np.argwhere(mask.values)
+            istart = indx[:,0].min()-1
+            iend = indx[:,0].max()+1
+            jstart = indx[:,1].min()-1
+            jend = indx[:,1].max()+1
+            mask[istart:iend+1,jstart:jend+1] = True
+            clipped_ds = ds.where(mask, drop=True)
+            clipped_ds.to_netcdf(ofile)
     return ofile

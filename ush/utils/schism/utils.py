@@ -8,7 +8,7 @@ def bounding_rectangle_2d(hgrid_fname):
         x_min = x_min % 360.0
     if (x_max < 0):
         x_max = x_max % 360.0    
-    return [x_min, x_max, y_min, y_max]
+    return [x_min, y_min, x_max, y_max]
 
 def read_hgrid(hgrid_fname):
     with open(hgrid_fname, 'r') as file:

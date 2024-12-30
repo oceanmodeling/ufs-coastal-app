@@ -22,7 +22,7 @@ sys.path.append(os.path.join(os.getcwd(), 'utils/data'))
 #import gen_bnd
 #import gen_gr3
 #import gen_bctides
-#import utils
+import utils
 import get_hrrr
 import create_esmf_mesh
 
