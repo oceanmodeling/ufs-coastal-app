@@ -61,7 +61,7 @@ main_doc = "index"
 # General information about the project.
 project = "UFS Coastal Application"
 # pylint: disable=redefined-builtin
-copyright = "2023, NOS Storm Surge Modeling Team"
+copyright = "2025, NOS Storm Surge Modeling Team"
 author = "Staff of the NOS Storm Surge Modeling Team"
 
 # The version info for the project you're documenting, acts as replacement for

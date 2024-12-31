@@ -116,9 +116,9 @@ Then, additional Python modules that is required by the workflow can be installe
 
 In this case, `pyschism <https://github.com/schism-dev/pyschism>`_ is used to process SCHISM ocean model related input files while `Herbie <https://herbie.readthedocs.io/en/stable/index.html>`_ Python module is used to retrieve forcing files (i.e. `HRRR <https://rapidrefresh.noaa.gov/hrrr/>`_) that will be used by CDEPS Data Atmosphere to force the ocean model component. The rest of the Python modules are used to process forcing files to create `ESMF Mesh file <http://earthsystemmodeling.org/docs/nightly/develop/ESMF_refdoc/node3.html#SECTION03040000000000000000>`_, which is required by the CDEPS data component.
 
-================
-Running Workflow
-================
+======================
+Components of Workflow
+======================
 
 The workflow related files are found in two different directories under main source directory; ``templates/`` and ``ush/``. In this case, the template files are using `Jinja <https://jinja.palletsprojects.com/en/stable/>`_ format to define component specific namelist files. The ``ush/`` directory includes UFS Coastal application specific scripts and configuration files that are used by the ``uwtools`` workflow environment.
 
@@ -127,12 +127,125 @@ The current version of the workflow is leveraging a simple ``uwtools`` provided 
 .. note::
    The initial version of workflow only supports DATM-SCHISM configuration but it will be improved to cover other UFS Coastal specific configurations in the near future.
 
-DATM-SCHISM
------------
+Main configuration file ``config.yaml``
+---------------------------------------
 
-This model configuration has two model components (CDEPS and SCHISM) and the mediator (CMEPS) to create uni-directional coupled application. In this case, CDEPS Data Atmosphere provides atmospheric forcing (components of the wind speed and also surface pressure) to ocean model component but ocean model does not feedback to the atmsopheric model component.
+This section includes detailed information about the main configuration file (``config.yaml`` that is found under ``ush/`` directory) and the parameters used in each section. The YAML formatted file includes multiple sections to define entire end-to-end workflow. Each supported configuration has its own template ``config.yaml`` file. To run a configuration through the workflow, the user needs to copy one of the template file as ``config.yaml`` and customize it based on selected configuration.
 
-The main workflow configuration file (``coastal.yaml``) for this specific configuration is found under ``ush/`` directory. The YAML formatted file includes multiple sections to define entire end-to-end workflow. The detailed information and steps about currently supported workflow can be seen in following table.
+The following tables mainly describes the options that can be used in the ``config.yaml``. Some of those options are configuration specific. For example, ``schism`` section is only required when configuration includes SCHISM ocean model component but ``coastal`` or ``platform`` sections are required for all the configurations.
+
+.. list-table:: Section ``coastal`` (required)
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Option
+     - Description
+   * - execution
+     - Sub-section for the job submission script
+       It might include ``batchargs``, ``envcmds``, ``executable``, ``mpiargs`` and ``mpicmd``
+   * - links
+     - List of the files that will be copied to run directory. It is given as destination, source pairs.
+   * - rundir
+     - Path for run directory
+
+.. list-table:: Section ``driver`` (required)
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Option
+     - Description
+   * - componentList
+     - List of model components that will be active in the configuration
+   * - runSequence
+     - Coupling run sequence. The names used in here needs to be consistent with name of active model components
+   * - attributes
+     - Driver level ESMF/NUOPC attributes such as ``Verbosity`` level
+   * - allcomp/attributes
+     - Attributes that will be shared across model components
+   * - med
+     - Mediator specific attributes such as model name, PET range etc.
+   * - atm
+     - Atmospheric model specific attributes such as model name, PET range etc.
+   * - ocn
+     - Ocean model specific attributes such as model name, PET range etc.
+
+.. note::
+   Model specific sections can be optional. If the desired configuration does not have ocean component, then ``ocn`` section can be skipped.   
+.. list-table:: Section ``platform`` (required)
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Option
+     - Description
+   * - account
+     - Account used in the job submission script
+   * - scheduler
+     - Type of job scheduler. Supported options are ``slurm``, ``pbs``, and ``lsf``
+
+.. list-table:: Section ``cdeps`` (optional)
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Option
+     - Description
+   * - cdeps/atm_in/update_values/datm_nml
+     - Data atmosphere specific configuration options used in ``datm_in``
+   * - cdeps/atm_streams/streams/stream[NN]
+     - Data atmosphere specific configuration options used in ``datm.streams``
+
+.. note::
+   The ``cdeps/atm_streams/streams/`` section might include multiple section of streams named like ``stream01``, ``stream02`` etc.
+
+.. note::
+   More information about CDEPS related configuration options can be found in `CDEPS documentation <https://escomp.github.io/CDEPS/versions/master/html/index.html>`_.
+
+.. list-table:: Section ``schism`` (optional)
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Option
+     - Description
+   * - hgrid
+     - Location of SCHISM horizontal grid that will be used to create input files
+   * - vgrid
+     - Location of SCHISM vertical grid that will be used to create input files
+   * - boundary_vars
+     - Flags for boundary variables that would be created. The orders are ``elev2D``, ``TS``, and ``UV``.
+   * - ocean_bnd_ids
+     - Segment indices for ocean boundaries, starting from zero
+   * - bctides
+     - Subsection for tidal boundary conditions such as TPXO dataset location, constituents etc.
+   * - namelist
+     - Subsection for ``param.nml`` customizations such as ``rnday`` for total run time in days or ``dt`` for time step in sec.
+       
+.. note::
+   The entries in `schism/namelist` section are used to customize SCHISM main configuration file (``param.nml``). The parameters that are used to define simulation start date (``start_year``, ``start_month``, ``start_day``, ``start_hour`` and ``utc_start``) is modified automatically by the workflow and there is no need to define them seperately in this section. The main template file can be seen under ``templates/param.nml`` directory.
+
+.. list-table:: Section ``input`` (optional)
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Option
+     - Description
+   * - source
+     - The data source such as ``hrrr`` for High Resolution Rapid Refresh dataset.
+   * - length
+     - Lenght of required data in hours
+   * - fxx
+     - Forecast lead time
+   * - subset
+     - Option to subset data based on given grid file. It could be ``true`` or ``false``.
+
+.. note::
+   The workflow uses Python Herbie module to retrieve data files and more information can be found in `Herbie documentation <https://herbie.readthedocs.io/en/stable/index.html>`_. HRRR Homepage (ESRL) can be found in `GSL webpage <https://rapidrefresh.noaa.gov/hrrr/>`_.
+
+.. note::
+   The forcing file used by data components can be also provided by user. In this case, the files can be copied to run directory using ``coastal/links`` section.
+
+DATM-SCHISM Configuration
+-------------------------
+
+The model configuration includes two model components (CDEPS and SCHISM) and the mediator (CMEPS) to create uni-directional coupled application. In this case, CDEPS Data Atmosphere provides atmospheric forcing (components of the wind speed and also surface pressure) to the ocean model component but there is no feedback from the ocean to atmsopheric model component.
 
 .. list-table:: Workflow tasks for DATM-SCHISM configuration
    :widths: 10 25 50 50
@@ -195,7 +308,10 @@ The main workflow configuration file (``coastal.yaml``) for this specific config
      - model
      -
 
-The following command is used to trigger each task to populate run directory required for the DATM-SCHISM configuration.
+Running Workflow
+----------------
+
+The run directory for the specified configuration (via ``coastal.yaml``) can be created using following command.
 
 .. code-block:: console
 
