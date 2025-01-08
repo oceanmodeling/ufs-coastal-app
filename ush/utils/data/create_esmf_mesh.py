@@ -1,12 +1,13 @@
 try:
     import os
     import sys
-    from datetime import datetime
     import numpy as np
     import xarray as xr
     import dask.array as da
     import dask.dataframe as dd
     import subprocess
+    import logging
+    from datetime import datetime
 except ImportError as ie:
     sys.stderr.write(str(ie))
     exit(2)
@@ -102,7 +103,7 @@ def scrip_to_mesh(ifile, fout='mesh.nc', output_dir='./'):
             # Run command
             if bindir:
                 cmd = [ os.path.join(bindir[0], 'ESMF_Scrip2Unstruct'), ifile, ofile, '0' ]
-                print(cmd)
+                logging.info("create_esmf_mesh: Running {}", cmd)
                 result = subprocess.run(cmd)
                 result.check_returncode()
 
