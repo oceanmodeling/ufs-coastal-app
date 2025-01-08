@@ -17,7 +17,7 @@ def gen_grid_def(ifile, mask_var=None, ff='scrip', output_dir='./'):
     if os.path.isfile(ifile):
         ds = xr.open_dataset(ifile, mask_and_scale=False, decode_times=False)
     else:
-        print('Input file {} could not find!'.format(ifile))
+        logging.error("Input file {} could not find!'.format(ifile)")
         exit(2)
 
     # Get coordinate information
@@ -103,7 +103,7 @@ def scrip_to_mesh(ifile, fout='mesh.nc', output_dir='./'):
             # Run command
             if bindir:
                 cmd = [ os.path.join(bindir[0], 'ESMF_Scrip2Unstruct'), ifile, ofile, '0' ]
-                logging.info("create_esmf_mesh: Running {}", cmd)
+                logging.info("Running command - %s", ' '.join(cmd))
                 result = subprocess.run(cmd)
                 result.check_returncode()
 
