@@ -1,17 +1,42 @@
 import os
+from uwtools.exceptions import UWConfigError
 from pyschism.mesh.hgrid import Gr3
 
-def execute(hgrid_file, description, output_dir="./"):
+def execute(opts, output_dir="./"):
     # Read in horizontal grid
+    if os.path.exists(opts["hgrid"]):
+        hgrid_file = opts["hgrid"]
+    else:
+        print("The file {} does not exist.".format(opts["hgrid"]))
+        sys.exit()    
     hgrid = Gr3.open(hgrid_file, crs='epsg:4326')
     grd = hgrid.copy()
 
-    # Set file names
-    gr3_names = ['albedo', 'diffmax', 'diffmin', 'watertype', 'windrot_geo2proj','manning']
+    # Check output directory and create it if it is not created
+    if not os.path.isdir(output_dir):
+        try:
+            os.mkdir(output_dir)
+        except Exception as e:
+           raise UWConfigError(f"An error occurred {output_dir}") from e
 
-    # Parameters
-    # TODO: this needs to be generic and provided by the workflow configuration file
-    values = [2.000000e-1, 1.0, 1e-6, 4, 0.00000000, 2.5000000e-02]
+    # Set file names
+    gr3_names = []
+    values = []
+    if "gr3" in opts.keys():
+        # Check description
+        description = "description"
+        if "description" in opts["gr3"].keys():
+            description = opts["gr3"]["description"]
+
+        # Check other keys
+        for key, val in opts["gr3"].items():
+            if not key == "description":
+                gr3_names.append(key)
+                values.append(val)
+    else:
+        # Parameters
+        gr3_names = ['albedo', 'diffmax', 'diffmin', 'watertype', 'windrot_geo2proj','manning']
+        values = [2.000000e-1, 1.0, 1e-6, 4, 0.00000000, 2.5000000e-02]
 
     for name, value in zip(gr3_names, values):
         # Set output file name

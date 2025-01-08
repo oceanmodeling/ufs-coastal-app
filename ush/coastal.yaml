@@ -1,7 +1,7 @@
 dir:
   app: /work2/noaa/nems/tufuk/COASTAL/ufs-coastal-app-wf
   run: run
-  data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_20400/coastal_ike_shinnecock_atm2sch_intel
+  data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_3236768/coastal_ike_shinnecock_atm2sch_intel
 platform:
   account: nems
   scheduler: slurm
@@ -22,17 +22,17 @@ coastal:
       - '--export=ALL'
     mpicmd: srun
   links:
-    albedo.gr3: '{{ dir.data }}/albedo.gr3'
-    bctides.in: '{{ dir.data }}/bctides.in'
+    #albedo.gr3: '{{ dir.data }}/albedo.gr3'
+    #bctides.in: '{{ dir.data }}/bctides.in'
     fd_ufs.yaml: '{{ dir.app }}/sorc/ufs-weather-model/tests/parm/fd_ufs.yaml'
     hgrid.gr3: '{{ dir.data }}/hgrid.gr3'
     hgrid.ll: '{{ dir.data }}/hgrid.ll'
-    manning.gr3: '{{ dir.data }}/manning.gr3'
-    noahmptable.tbl: '{{ dir.data }}/noahmptable.tbl'
-    station.in: '{{ dir.data }}/station.in'
+    #manning.gr3: '{{ dir.data }}/manning.gr3'
+    #noahmptable.tbl: '{{ dir.data }}/noahmptable.tbl'
+    #station.in: '{{ dir.data }}/station.in'
     vgrid.in: '{{ dir.data }}/vgrid.in'
-    watertype.gr3: '{{ dir.data }}/watertype.gr3'
-    windrot_geo2proj.gr3: '{{ dir.data }}/windrot_geo2proj.gr3'
+    #watertype.gr3: '{{ dir.data }}/watertype.gr3'
+    #windrot_geo2proj.gr3: '{{ dir.data }}/windrot_geo2proj.gr3'
   rundir: '{{ dir.run }}'
 driver:
   componentList: [ATM, OCN, MED]
@@ -140,11 +140,22 @@ schism:
   vgrid: '{{ dir.data }}/vgrid.in'
   boundary_vars: [True, True, True]
   ocean_bnd_ids: [0]
+  gr3:
+    description: description
+    albedo: 2.0e-1
+    #diffmin: 1.0e-6
+    #diffmax: 1.0
+    watertype: 4
+    windrot_geo2proj: 0.0
+    manning: 2.5e-2
   bctides:
-    tpxo_dir: /work/noaa/nosofs/mjisan/pyschism-main/PySCHISM_tutorial/data/TPXO
-    bctypes: [[3, 0, 0, 0]]
+    mode: tidal
     constituents: ['Q1','O1','P1','K1','N2','M2','S2','K2','Mm','Mf','M4','MN4','MS4','2N2','S1']  
     database: 'tpxo'
+    earth_tidal_potential: true
+    cutoff_depth: 40
+    bc_type: 3
+    tpxo_dir: /work/noaa/nosofs/mjisan/pyschism-main/PySCHISM_tutorial/data/TPXO
   namelist:
     template_file: ../templates/param.nml
     template_values:

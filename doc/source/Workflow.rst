@@ -108,11 +108,16 @@ Then, additional Python modules that is required by the workflow can be installe
 .. code-block:: console
    
    conda install pip
+   conda install udunits2
+   conda install fiona
    pip install pyschism
    
    conda install -c conda-forge xarray dask netCDF4 bottleneck
    conda install -c conda-forge esmpy
    conda install -c conda-forge herbie-data
+
+.. note::
+   ``udunits2`` and ``fiona`` Python modules are required by ``pyschism``.
 
 In this case, `pyschism <https://github.com/schism-dev/pyschism>`_ is used to process SCHISM ocean model related input files while `Herbie <https://herbie.readthedocs.io/en/stable/index.html>`_ Python module is used to retrieve forcing files (i.e. `HRRR <https://rapidrefresh.noaa.gov/hrrr/>`_) that will be used by CDEPS Data Atmosphere to force the ocean model component. The rest of the Python modules are used to process forcing files to create `ESMF Mesh file <http://earthsystemmodeling.org/docs/nightly/develop/ESMF_refdoc/node3.html#SECTION03040000000000000000>`_, which is required by the CDEPS data component.
 

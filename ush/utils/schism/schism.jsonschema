@@ -39,20 +39,40 @@
             "type": "number"
           }
         },
+        "gr3": {
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "albedo": {
+              "type": "number"
+            },
+            "diffmin": {
+              "type": "number"
+            },
+            "diffmax": {
+              "type": "number"
+            },
+            "watertype": {
+              "type": "number"
+            },
+            "windrot_geo2proj": {
+              "type": "number"
+            },
+            "manning": {
+              "type": "number"
+            }
+          }
+        },
         "bctides": {
           "additionalProperties": false,
           "properties": {
-            "tpxo_dir": {
-              "type": "string"
-            },
-            "bctypes": {
-              "type": "array",
-              "items": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                }
-              }
+            "mode": {
+              "enum": [
+                "tidal",
+                "time-elev"
+              ]
             },
             "constituents": {
               "type": "array",
@@ -68,6 +88,9 @@
             },
             "earth_tidal_potential": {
               "type": "boolean"
+            },
+            "cutoff_depth": {
+              "type": "number"
             },
             "elevation_values": {
               "type": "array",
@@ -117,12 +140,27 @@
                 "type": "number"
               }
             },
-            "cutoff_depth": {
+            "bc_type": {
               "type": "number"
+            },
+            "elev_th": {
+              "type": "string"
+            },
+            "elev_source": {
+              "enum": [
+                "timeseries",
+                "hycom"
+              ]
+            },
+            "additional_flags": {
+              "type": "string"
+            },
+            "tpxo_dir": {
+              "type": "string"
             }
           },
           "required": [
-            "tpxo_dir"
+            "bc_type"
           ],
           "type": "object"
         },

@@ -1,8 +1,13 @@
 import os
 import sys
 from uwtools.logging import log
-from pyschism.mesh.hgrid import Hgrid
-from pyschism.forcing.hycom.hycom2schism import OpenBoundaryInventory
+try:
+    import pyschism
+    from pyschism.mesh.hgrid import Hgrid
+    from pyschism.forcing.hycom.hycom2schism import OpenBoundaryInventory
+except ImportError as ie:
+    log.error(str(ie))
+    sys.exit(1)
 
 def execute(hgrid_file, vgrid_file, start_date, rnday, ocean_bnd_ids, output_dir="./", output_vars=[True,True,True]):
     '''
