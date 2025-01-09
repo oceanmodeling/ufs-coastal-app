@@ -132,12 +132,12 @@ The current version of the workflow is leveraging a simple ``uwtools`` provided 
 .. note::
    The initial version of workflow only supports DATM-SCHISM configuration but it will be improved to cover other UFS Coastal specific configurations in the near future.
 
-Main configuration file ``config.yaml``
----------------------------------------
+Main configuration file ``coastal.yaml``
+----------------------------------------
 
-This section includes detailed information about the main configuration file (``config.yaml`` that is found under ``ush/`` directory) and the parameters used in each section. The YAML formatted file includes multiple sections to define entire end-to-end workflow. Each supported configuration has its own template ``config.yaml`` file. To run a configuration through the workflow, the user needs to copy one of the template file as ``config.yaml`` and customize it based on selected configuration.
+This section includes detailed information about the main configuration file (``coastal.yaml`` that is found under ``ush/`` directory) and the parameters used in each section. The YAML formatted file includes multiple sections to define entire end-to-end workflow. Each supported configuration has its own template ``coastal.yaml`` file. To run a configuration through the workflow, the user needs to copy one of the template file as ``coastal.yaml`` and customize it based on selected configuration.
 
-The following tables mainly describes the options that can be used in the ``config.yaml``. Some of those options are configuration specific. For example, ``schism`` section is only required when configuration includes SCHISM ocean model component but ``coastal`` or ``platform`` sections are required for all the configurations.
+The following tables mainly describes the options that can be used in the ``coastal.yaml``. Some of those options are configuration specific. For example, ``schism`` section is only required when configuration includes SCHISM ocean model component but ``coastal`` or ``platform`` sections are required for all the configurations.
 
 .. list-table:: Section ``coastal`` (required)
    :widths: 10 25
