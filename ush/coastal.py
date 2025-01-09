@@ -136,7 +136,10 @@ class Coastal(DriverCycleBased):
         cfg = self.config_full["input"]
         hgrid = self.config_full["schism"]["hgrid"]
         # get bounding box from grid
-        if cfg['subset']:
+        subset = True
+        if 'subset' in cfg.keys():
+            subset = cfg['subset']
+        if subset:
             bbox = utils.bounding_rectangle_2d(hgrid)
         else:
             bbox = None
@@ -193,7 +196,11 @@ class Coastal(DriverCycleBased):
         yield asset(path, path.is_file)
         template_file = '../templates/model_configure'
         yield file(path=Path(template_file))
-        # TODO: nhours_fcst is fixed to 24 to find better solution
+        # Set simulation lenght based on input to find better solution
+        nhours_fcst = 24
+        if 'input' in self.config_full.keys():
+            if 'length' in self.config_full['input'].keys():
+                nhours_fcst = self.config_full['input']['length']
         render(
             input_file=template_file,
             output_file=path,
@@ -201,7 +208,7 @@ class Coastal(DriverCycleBased):
                        'start_month': self.cycle.month,
                        'start_day'  : self.cycle.day,
                        'start_hour' : self.cycle.hour,
-                       'nhours_fcst': 24,
+                       'nhours_fcst': nhours_fcst,
                        },
             )
 

@@ -143,8 +143,6 @@ schism:
   gr3:
     description: description
     albedo: 2.0e-1
-    #diffmin: 1.0e-6
-    #diffmax: 1.0
     watertype: 4
     windrot_geo2proj: 0.0
     manning: 2.5e-2
@@ -163,6 +161,7 @@ schism:
       dt: 200
 input:
   source: hrrr
-  length: 25
+  length: 24
   fxx: 0
   subset: true
+  overwrite: true
