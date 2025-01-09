@@ -317,6 +317,9 @@ The model configuration includes two model components (CDEPS and SCHISM) and the
      - model
      -
 
+.. note::
+   To use GFS (Global Forecast System, 0.25 deg. global 6-hourly dataset) output as forcing, following changes need to be done in ``coastal.yaml`` workflow configuration file. (1) Set ``input/source`` to ``gfs``, and (2) set ``cdeps/atm_streams/streams/stream01/stream_data_variables`` to ``[u10 Sa_u10m, v10 Sa_v10m, prmsl Sa_pslv ]``.
+
 Running Workflow
 ----------------
 

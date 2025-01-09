@@ -59,8 +59,9 @@ class Coastal(DriverCycleBased):
         config = self.config_full
         yield self.taskname("Provisioned run directory")
         self._schism_config()
-        self.data_retrieve()
-        self.create_mesh()
+        if 'input' in config.keys():
+            self._data_retrieve()
+            self._create_mesh()
         cdeps = CDEPS(config=config, cycle=self.cycle, controller=[self.driver_name()])
         schism = SCHISM(config=config, cycle=self.cycle, controller=[self.driver_name()], schema_file="utils/schism/schism.jsonschema")
         yield [
@@ -128,7 +129,7 @@ class Coastal(DriverCycleBased):
         yield None
 
     @task
-    def data_retrieve(self):
+    def _data_retrieve(self):
         """
         Download and process forcing data
         """
@@ -150,7 +151,7 @@ class Coastal(DriverCycleBased):
         yield None
 
     @task
-    def create_mesh(self):
+    def _create_mesh(self):
         """
         Creates ESMF mesh file
         """
