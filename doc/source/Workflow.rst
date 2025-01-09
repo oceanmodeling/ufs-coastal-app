@@ -220,6 +220,8 @@ The following tables mainly describes the options that can be used in the ``conf
      - Segment indices for ocean boundaries, starting from zero
    * - bctides
      - Subsection for tidal boundary conditions such as TPXO dataset location, constituents etc.
+   * - gr3
+     - Subsection for gr3 files
    * - namelist
      - Subsection for ``param.nml`` customizations such as ``rnday`` for total run time in days or ``dt`` for time step in sec.
        
@@ -233,13 +235,15 @@ The following tables mainly describes the options that can be used in the ``conf
    * - Option
      - Description
    * - source
-     - The data source such as ``hrrr`` for High Resolution Rapid Refresh dataset.
+     - The data source. Both ``hrrr`` (High Resolution Rapid Refresh, default) and ``gfs`` (Global Forecast System) are supported.
    * - length
-     - Lenght of required data in hours
+     - Lenght of required data in hours. Default is 24.
    * - fxx
-     - Forecast lead time
+     - Forecast lead time. Default is 0.
    * - subset
-     - Option to subset data based on given grid file. It could be ``true`` or ``false``.
+     - Option to subset data based on given grid file. Default is ``true``.
+   * - overwrite
+     - Option to overwrite all files. Default is ``false``.
 
 .. note::
    The workflow uses Python Herbie module to retrieve data files and more information can be found in `Herbie documentation <https://herbie.readthedocs.io/en/stable/index.html>`_. HRRR Homepage (ESRL) can be found in `GSL webpage <https://rapidrefresh.noaa.gov/hrrr/>`_.
@@ -285,17 +289,17 @@ The model configuration includes two model components (CDEPS and SCHISM) and the
      - cdeps, datm
      - cdeps/atm_streams/streams/stream01
    * - 7
-     -
-     -
-     -
+     - Generate open boundary input files using ``self.schism_bnd_inputs()``
+     - schism
+     - schism
    * - 8
-     -
-     -
-     -
+     - Generate ``gr3`` formatted input files using ``self.schism_gr3_inputs()``
+     - schism
+     - schism/gr3
    * - 9
-     -
-     -
-     -
+     - Generate tidal open boundary conditions using ``self.schism_tidal_inputs()``
+     - schism
+     - schism/bctides
    * - 10
      - Generate ``param.nml`` using ``schism.namelist_file()``
      - schism
@@ -306,7 +310,7 @@ The model configuration includes two model components (CDEPS and SCHISM) and the
      - coastal/links
    * - 12
      - Create required directoryies such as ``RESTART`` under run directory using ``self.restart_dir()``
-     - model    
+     - model
      -
    * - 13
      - Create job submission script using ``self.runscript()``

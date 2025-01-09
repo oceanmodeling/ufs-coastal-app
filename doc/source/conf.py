@@ -21,7 +21,6 @@ import os
 import sys
 
 # Note that we need a specific version of sphinx_rtd_theme. This can be obtained with:
-# pip install git+https://github.com/esmci/sphinx_rtd_theme.git@version-dropdown-with-fixes
 import sphinx_rtd_theme
 
 # -- General configuration ------------------------------------------------
