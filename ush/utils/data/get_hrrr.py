@@ -40,7 +40,7 @@ def download(opts, cycle, bbox=[], combine=False, output_dir='./'):
     # check given configuration
     if source == 'gfs' and fxx == 0 and length < 6:
         logging.error('GFS is initialized every 6-hours. The lenght %d needs to be multiples of 6 !!!', length)
-        sys.exit(2)
+        sys.exit()
 
     # create lists of dates that needs to be downloaded
     now = cycle
@@ -53,9 +53,9 @@ def download(opts, cycle, bbox=[], combine=False, output_dir='./'):
     date_list.sort()
     if not date_list:
         logging.warning('Nothing to do! Exiting.')
-        exit(1)
+        sys.exit()
 
-    logging.info('List of dates that will be retrieved: {}'.format(' '.join(map(str, date_list))))
+    logging.info('List of dates that will be retrieved: %s', ', '.join(map(str, date_list)))
 
     # loop over dates and download them
     file_set = set()
@@ -64,13 +64,13 @@ def download(opts, cycle, bbox=[], combine=False, output_dir='./'):
             ofile = get(date, source, fxx, bbox, overwrite, output_dir)
             file_set.add(ofile)
         except Exception as ex:
-            logging.error(f'Download failed for {date}: {ex}', exc_info=ex)
+            logging.error('Download failed for %s: %s', date, str(ex))
 
     # combine files
     file_list = list(file_set)
     file_list.sort()
     if combine:
-        logging.info('List of files that will be combined: {}'.format(' '.join(map(str, file_list))))
+        logging.info('List of files that will be combined: %s', ' '.join(map(str, file_list)))
         ds = xr.open_mfdataset(file_list, combine='nested', concat_dim='time', coords='minimal', compat='override', engine='netcdf4')
         ofile = os.path.join(output_dir, 'combined.nc')
         ds.to_netcdf(ofile)
@@ -95,7 +95,7 @@ def get(date, source, fxx, bbox, overwrite, output_dir):
         lfile = H.download(search=searchString, overwrite=overwrite)
     else:
         logging.error('Requested file could not found! Exiting')
-        sys.exit(2)
+        sys.exit()
 
     # check the file and subset it if it is requested
     if os.path.isfile(lfile):
@@ -111,7 +111,7 @@ def get(date, source, fxx, bbox, overwrite, output_dir):
                 # create mask based on given box and coordinates
                 min_lon, min_lat, max_lon, max_lat = bbox
                 logging.info('Subset data based on given bounding box')
-                logging.info('min_lon = {}, min_lat = {} , max_lon = {}, max_lat = {}'.format(min_lon, min_lat, max_lon, max_lat))
+                logging.info('min_lon = %d, min_lat = %d, max_lon = %d, max_lat = %d', min_lon, min_lat, max_lon, max_lat)
                 if 'lat' in ds.coords:
                     lat = ds['lat']
                 elif 'latitude' in  ds.coords:

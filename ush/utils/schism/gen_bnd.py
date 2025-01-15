@@ -1,13 +1,12 @@
-import os
 import sys
-from uwtools.logging import log
+import logging
 try:
     import pyschism
     from pyschism.mesh.hgrid import Hgrid
     from pyschism.forcing.hycom.hycom2schism import OpenBoundaryInventory
 except ImportError as ie:
-    log.error(str(ie))
-    sys.exit(1)
+    logging.error(str(ie))
+    sys.exit()
 
 def execute(hgrid_file, vgrid_file, start_date, rnday, ocean_bnd_ids, output_dir="./", output_vars=[True,True,True]):
     '''
@@ -21,14 +20,14 @@ def execute(hgrid_file, vgrid_file, start_date, rnday, ocean_bnd_ids, output_dir
     if os.path.exists(hgrid_file):
         hgrid = Hgrid.open(hgrid_file, crs='epsg:4326')
     else:
-        print("The file {} does not exist.".format(hgrid_file))
+        logging.error("The file %s does not exist.", hgrid_file)
         sys.exit()
 
     # create open boundary object
     if os.path.exists(vgrid_file):
         bnd = OpenBoundaryInventory(hgrid, vgrid_file)
     else:
-        print("The file {} does not exist.".format(vgrid_file))
+        logging.error("The file %s does not exist.", vgrid_file)
         sys.exit()
 
     # create open boundary data files

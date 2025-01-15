@@ -67,21 +67,14 @@ Version: 1.1
 Last Updated: January 2025
 """
 
-from time import time
 import os
-import argparse
-from datetime import datetime, timedelta
+import numpy as np
 import logging
-import json
 from netCDF4 import Dataset
 from pyschism.mesh.vgrid import Vgrid
-import numpy as np
 from pyschism.mesh import Hgrid
 from pyschism.forcing.bctides import Bctides
 from pyschism.forcing.hycom.hycom2schism import OpenBoundaryInventory
-
-def list_of_strings(arg):
-    return arg.split(',')
 
 def create_boundary_flags(num_nodes, bc_type, additional_flags=None):
     """
@@ -110,7 +103,6 @@ def create_boundary_flags(num_nodes, bc_type, additional_flags=None):
         flags.append([nodes, bc_type] + additional_flags)
     
     return flags
-
 
 def create_elev2d_th_nc(filename, timeseries_data, hgrid, vgrid):
     open_boundaries = hgrid.boundaries.open
@@ -150,36 +142,22 @@ def create_elev2d_th_nc(filename, timeseries_data, hgrid, vgrid):
         nc.Conventions = "CF-1.6"
         nc.history = "Created by SCHISM boundary condition generator"
 
-def detect_ocean_boundaries(hgrid, hgrid_file):
-    # Get boundary info from hgrid file
-    num_boundaries, nodes_per_boundary = read_hgrid_boundaries(hgrid_file)
-    ocean_bnd_ids = list(range(num_boundaries))  # Use all boundaries by default
-    
-    print(f"Total boundaries: {num_boundaries}")
-    print(f"Nodes per boundary: {nodes_per_boundary}")
-    
-    return ocean_bnd_ids
-
-
 def create_elev2d_from_hycom(hgrid, vgrid, outdir, start_date, rnday, ocean_bnd_ids=None, elev2D=True, TS=False, UV=False, hgrid_file=None):
     if ocean_bnd_ids is None:
         num_boundaries, _ = read_hgrid_boundaries(hgrid_file)
         ocean_bnd_ids = list(range(num_boundaries))
-        print(f"Using boundaries: {ocean_bnd_ids}")
-
-    print(f"elev2D={elev2D}, TS={TS}, UV={UV}")
     
     # Convert vgrid object to path string if needed
-
     vgrid_path = vgrid.path if hasattr(vgrid, 'path') else args.vgrid
     
     try:
+        logging.info("elev2D = %s, TS = %s, UV = %s", elev2D, TS, UV)
+        logging.info("Ocean boundaries: %s", ' '.join(map(str, ocean_bnd_ids)))
         bnd = OpenBoundaryInventory(hgrid, vgrid_path)
         bnd.fetch_data(outdir, start_date, rnday, elev2D=elev2D, TS=TS, UV=UV,
                       ocean_bnd_ids=ocean_bnd_ids)
     except Exception as e:
-        print(f"Error details - hgrid type: {type(hgrid)}, vgrid type: {type(vgrid)}")
-        print(f"Ocean boundaries: {ocean_bnd_ids}")
+        logging.error("Error details: hgrid type is %s and vgrid type is %s", type(hgrid), type(vgrid))
         raise e
     
 def read_hgrid_boundaries(hgrid_file):
@@ -231,7 +209,7 @@ def read_hgrid_boundaries(hgrid_file):
                 return num_open_boundaries, nodes_per_boundary
         
         # If neither format is found
-        print("Warning: Attempting alternative format search...")
+        logging.info("Warning: Attempting alternative format search...")
         
         # Try looking for any line containing boundary information
         for i, line in enumerate(lines):
@@ -250,7 +228,7 @@ def read_hgrid_boundaries(hgrid_file):
                             nodes_per_boundary.append(num_nodes)
                             current_line += 1
                             
-                        print(f"Found boundary information using alternative format")
+                        logging.info("Found boundary information using alternative format")
                         return num_open_boundaries, nodes_per_boundary
                 except:
                     continue
@@ -258,24 +236,9 @@ def read_hgrid_boundaries(hgrid_file):
         raise ValueError("Could not find boundary information in any recognized format")
         
     except (IndexError, ValueError) as e:
-        print(f"Error: Failed to parse hgrid.ll file at line {current_line if 'current_line' in locals() else 'unknown'}")
-        print(f"Problematic line content: {lines[current_line] if 'current_line' in locals() else 'unknown'}")
+        logging.error("Failed to parse hgrid.ll file at line %s", current_line if 'current_line' in locals() else 'unknown')
+        logging.error("Problematic line content: %s", lines[current_line] if 'current_line' in locals() else 'unknown')
         raise ValueError(f"Error parsing hgrid.ll file: {str(e)}")
-
-
-def validate_boundary_spec(flags, num_boundaries, nodes_per_boundary):
-    """
-    Validate boundary specifications against hgrid.ll information
-    """
-    if len(flags) != num_boundaries:
-        raise ValueError(f"Number of boundary flags ({len(flags)}) does not match "
-                        f"number of open boundaries in hgrid.ll ({num_boundaries})")
-
-    # For type 4 boundaries, validate format
-    for i, flag in enumerate(flags):
-        if flag[0] != nodes_per_boundary[i]:
-            raise ValueError(f"Number of nodes in flag ({flag[0]}) doesn't match "
-                           f"hgrid.ll ({nodes_per_boundary[i]}) for boundary {i+1}")
 
 def write_timelev_bctides(outdir, start_date, flags):
     """Write timeseries of water elevation bctides.in file for type 4 boundary conditions"""
@@ -287,18 +250,17 @@ def write_timelev_bctides(outdir, start_date, flags):
         for flag in flags:
             f.write(f" {' '.join(map(str, flag))} ! type of b.c.\n")
 
-
 def execute(opts, start_date, rnday, output_dir="./"):
     # Check grid files
     if os.path.exists(opts["hgrid"]):
         hgrid = opts["hgrid"]
     else:
-        print("The file {} does not exist.".format(opts["hgrid"]))
+        logging.error("The file %s does not exist.", opts["hgrid"])
         sys.exit()
     if os.path.exists(opts["vgrid"]):
         vgrid = opts["vgrid"]
     else:
-        print("The file {} does not exist.".format(opts["vgrid"]))
+        logging.error("The file %s does not exist.", opts["vgrid"])
         sys.exit()
   
     # Check arguments
@@ -390,10 +352,10 @@ def execute(opts, start_date, rnday, output_dir="./"):
                                          hgrid_file=hgrid)
                 
 
-            print(f"\nSuccessfully generated boundary files:")
-            print(f"  bctides.in: {output_dir}")
-            print(f"  elev2D.th.nc: {os.path.abspath('elev2D.th.nc')}")
-            print(f"  Start date: {start_date}")
+            logging.info("Successfully generated boundary files:")
+            logging.info("  bctides.in  : %s", output_dir)
+            logging.info("  elev2D.th.nc: %s", os.path.abspath('elev2D.th.nc'))
+            logging.info("  Start date  : %s", start_date)
         else:
             # Verify required tidal arguments
             if not constituents or not database:
@@ -492,5 +454,5 @@ def execute(opts, start_date, rnday, output_dir="./"):
             return([os.path.join(output_dir, 'bctides.in')])
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        exit(1)
+        logging.error(str(e))
+        sys.exit()

@@ -9,16 +9,16 @@ try:
     import logging
     from datetime import datetime
 except ImportError as ie:
-    sys.stderr.write(str(ie))
-    exit(2)
+    logging.error(str(ie))
+    sys.exit()
 
 def gen_grid_def(ifile, mask_var=None, ff='scrip', output_dir='./'):
     # Open input file
     if os.path.isfile(ifile):
         ds = xr.open_dataset(ifile, mask_and_scale=False, decode_times=False)
     else:
-        logging.error("Input file {} could not find!'.format(ifile)")
-        exit(2)
+        logging.error("Input file %s could not find!", ifile)
+        sys.exit()
 
     # Get coordinate information
     xc = ds['longitude']
