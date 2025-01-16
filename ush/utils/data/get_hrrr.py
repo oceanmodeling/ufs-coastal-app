@@ -60,6 +60,7 @@ def download(opts, cycle, bbox=[], combine=False, output_dir='./'):
     # loop over dates and download them
     file_set = set()
     for date in date_list:
+        logging.info("Getting data for %s", date)
         try:
             ofile = get(date, source, fxx, bbox, overwrite, output_dir)
             file_set.add(ofile)
@@ -110,8 +111,7 @@ def get(date, source, fxx, bbox, overwrite, output_dir):
             else:
                 # create mask based on given box and coordinates
                 min_lon, min_lat, max_lon, max_lat = bbox
-                logging.info('Subset data based on given bounding box')
-                logging.info('min_lon = %d, min_lat = %d, max_lon = %d, max_lat = %d', min_lon, min_lat, max_lon, max_lat)
+                logging.info('Subset data using bounding box: min_lon = %f, min_lat = %f, max_lon = %f, max_lat = %f', min_lon, min_lat, max_lon, max_lat)
                 if 'lat' in ds.coords:
                     lat = ds['lat']
                 elif 'latitude' in  ds.coords:

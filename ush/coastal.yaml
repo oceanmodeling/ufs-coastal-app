@@ -21,18 +21,16 @@ coastal:
     mpiargs:
       - '--export=ALL'
     mpicmd: srun
+  forcing_data:
+    fxx: 0
+    length: 25
+    source: hrrr
+    subset: true
   links:
-    #albedo.gr3: '{{ dir.data }}/albedo.gr3'
-    #bctides.in: '{{ dir.data }}/bctides.in'
     fd_ufs.yaml: '{{ dir.app }}/sorc/ufs-weather-model/tests/parm/fd_ufs.yaml'
     hgrid.gr3: '{{ dir.data }}/hgrid.gr3'
     hgrid.ll: '{{ dir.data }}/hgrid.ll'
-    #manning.gr3: '{{ dir.data }}/manning.gr3'
-    #noahmptable.tbl: '{{ dir.data }}/noahmptable.tbl'
-    #station.in: '{{ dir.data }}/station.in'
     vgrid.in: '{{ dir.data }}/vgrid.in'
-    #watertype.gr3: '{{ dir.data }}/watertype.gr3'
-    #windrot_geo2proj.gr3: '{{ dir.data }}/windrot_geo2proj.gr3'
   rundir: '{{ dir.run }}'
 driver:
   componentList: [ATM, OCN, MED]
@@ -159,9 +157,3 @@ schism:
     template_values:
       rnday: 1
       dt: 200
-input:
-  source: hrrr
-  length: 24
-  fxx: 0
-  subset: true
-  overwrite: true

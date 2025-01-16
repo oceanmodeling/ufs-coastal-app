@@ -2,81 +2,146 @@
 A driver for the Coastal App coupled executable.
 """
 
-import os, sys
 import logging
+import sys
+from contextlib import redirect_stdout
 from pathlib import Path
-from iotaa import asset, task, tasks
-from uwtools.api.driver import DriverCycleBased
+
+from iotaa import asset, refs, task, tasks
 from uwtools.api.cdeps import CDEPS
-from uwtools.api.schism import SCHISM
+from uwtools.api.config import YAMLConfig
+from uwtools.api.driver import DriverCycleBased
 from uwtools.api.fs import link
 from uwtools.api.logging import use_uwtools_logger
-from uwtools.utils.tasks import file
+from uwtools.api.schism import SCHISM
 from uwtools.api.template import render
+from uwtools.utils.tasks import file
 
-# append paths of custom modules
-sys.path.append(os.path.join(os.getcwd(), 'utils/schism'))
-sys.path.append(os.path.join(os.getcwd(), 'utils/data'))
+sys.path.append(str(Path(__file__).parent))
 
-# load custom modules
-import gen_bnd
-import gen_gr3
-import gen_bctides
-import utils
-import get_hrrr
-import create_esmf_mesh
+# pylint: disable=wrong-import-position
 
-# setup logger
+from utils.data.create_esmf_mesh import gen_grid_def
+from utils.data.get_hrrr import download
+from utils.schism import gen_bctides, gen_bnd, gen_gr3
+from utils.schism.utils import bounding_rectangle_2d
+
 use_uwtools_logger()
-
-# global variable to store config for modification
-config = {}
 
 class Coastal(DriverCycleBased):
     """
     A driver for the Coastal App coupled executable.
     """
 
+    @classmethod
+    def driver_name(cls):
+        return "coastal"
+
+    @task
+    def forcing_data(self):
+        """
+        Forcing data.
+        """
+        path = self.rundir / "combined.nc"
+        yield self.taskname("Forcing data")
+        yield asset(path, path.is_file)
+        yield None
+        config_fd = self.config["forcing_data"]
+        hgrid = self.config_full["schism"]["hgrid"]
+        bbox = bounding_rectangle_2d(hgrid) if config_fd["subset"] else None
+        logging.debug("%s Using bounding box: %s", self.taskname(""), bbox)
+        self.rundir.mkdir(parents=True, exist_ok=True)
+        with open(self.rundir / "combined.log", "w", encoding="utf-8") as f:
+            with redirect_stdout(f):
+                logging.info("%s Downloading forcing data", self.taskname(""))
+                download(config_fd, self.cycle, bbox, combine=True, output_dir=self.rundir)
+
     @task
     def linked_files(self):
         """
         Data files linked into the run directory.
         """
-        links = self.config["links"]
         path = lambda fn: self.rundir / fn
+        links = self.config["links"]
         yield self.taskname("Linked files")
-        yield [asset(path(fn), path(fn).is_file) for fn in links.keys()]
+        yield [asset(path(fn), path(fn).is_file) for fn in links]
         yield None
         link(config=links, target_dir=self.rundir)
 
-    @tasks
-    def provisioned_rundir(self):
+    @task
+    def mesh_file(self):
         """
-        The run directory provisioned with all required content.
+        The ESMF mesh file.
         """
-        # copy config that is provided by the yaml file
-        global config
+        path_cdeps_config = self.rundir / "cdeps.yaml"
+        path_mesh_file = self.rundir / "mesh.nc"
+        yield self.taskname("ESMF mesh file")
+        yield {
+            "cdeps-config": asset(path_cdeps_config, path_cdeps_config.is_file),
+            "mesh-file": asset(path_mesh_file, path_mesh_file.is_file),
+        }
+        forcing_data = self.forcing_data()
+        yield forcing_data
+        self.rundir.mkdir(parents=True, exist_ok=True)
+        res = gen_grid_def(refs(forcing_data), ff="mesh", output_dir=self.rundir)
+        outfile = res["output_file"]
         config = self.config_full
-        yield self.taskname("Provisioned run directory")
-        self._schism_config()
-        if 'input' in config.keys():
-            self._data_retrieve()
-            self._create_mesh()
-        cdeps = CDEPS(config=config, cycle=self.cycle, controller=[self.driver_name()])
-        schism = SCHISM(config=config, cycle=self.cycle, controller=[self.driver_name()], schema_file="utils/schism/schism.jsonschema")
-        yield [
-                self._model_configure(),
-                self._ufs_configure(),
-                cdeps.atm_nml(),
-                cdeps.atm_stream(),
-                self.schism_bnd_inputs(),
-                self.schism_gr3_inputs(),
-                self.schism_tidal_inputs(),
-                schism.namelist_file(),
-                self.linked_files(),
-                self.restart_dir(),
-                self.runscript(),
-                ]
+        config["cdeps"]["atm_in"]["update_values"]["datm_nml"].update(
+            {
+                "nx_global": res["shape"][0],
+                "ny_global": res["shape"][1],
+                "model_maskfile": outfile,
+                "model_meshfile": outfile,
+            }
+        )
+        # NB: We could have multiple streams that might use different dataset.
+        config["cdeps"]["atm_streams"]["streams"]["stream01"]["stream_mesh_file"] = outfile
+        YAMLConfig(config).dump(path_cdeps_config)
+
+    @task
+    def model_configure(self):
+        """
+        The model_configure file.
+        """
+        fn = "model_configure"
+        yield self.taskname(f"Main configuration file {fn}")
+        path = self.rundir / fn
+        yield asset(path, path.is_file)
+        template_file = "../templates/model_configure"
+        yield file(path=Path(template_file))
+        # NB: Set simulation lenght based on input until to find better solution
+        nhours_fcst = 24
+        if 'forcing_data' in self.config.keys():
+            if 'length' in self.config['forcing_data'].keys():
+                nhours_fcst = self.config['forcing_data']['length']
+        render(
+            input_file=template_file,
+            output_file=path,
+            overrides={
+                "start_year": self.cycle.year,
+                "start_month": self.cycle.month,
+                "start_day": self.cycle.day,
+                "start_hour": self.cycle.hour,
+                "nhours_fcst": nhours_fcst,
+            },
+        )
+
+    @task
+    def ufs_configure(self):
+        """
+        The ufs.configure file.
+        """
+        fn = "ufs.configure"
+        yield self.taskname(f"Main driver configuration file {fn}")
+        path = self.rundir / fn
+        yield asset(path, path.is_file)
+        template_file = "../templates/ufs.configure"
+        yield file(path=Path(template_file))
+        config = self.config_full
+        d = {"driver": config["driver"]}
+        for component in config["driver"]["componentList"]:
+            d[component.lower()] = config[component.lower()]
+        render(input_file=template_file, output_file=path, overrides={"config": d})
 
     @task
     def restart_dir(self):
@@ -128,110 +193,57 @@ class Coastal(DriverCycleBased):
         yield [asset(path(fn), path(fn).is_file) for fn in _files]
         yield None
 
-    @task
-    def _data_retrieve(self):
+    @tasks
+    def provisioned_rundir(self):
         """
-        Download and process forcing data
+        The run directory provisioned with all required content.
         """
-        path = lambda fn: self.rundir / fn
-        cfg = self.config_full["input"]
-        hgrid = self.config_full["schism"]["hgrid"]
-        # get bounding box from grid
-        subset = True
-        if 'subset' in cfg.keys():
-            subset = cfg['subset']
-        if subset:
-            bbox = utils.bounding_rectangle_2d(hgrid)
-        else:
-            bbox = None
-        # retrive files
-        yield self.taskname("Prepare input forcing")
-        _files = get_hrrr.download(cfg, self.cycle, bbox, combine=True, output_dir=self.rundir)
-        yield [asset(path(fn), path(fn).is_file) for fn in _files]
-        yield None
+        yield self.taskname("Provisioned run directory")
+        mesh_file = self.mesh_file()
+        cdeps = CDEPS(
+            config=refs(mesh_file)["cdeps-config"],
+            controller=[self.driver_name()],
+            cycle=self.cycle,
+        )
+        schism_cfg = self.schism_update_config() 
+        schism = SCHISM(
+            config=refs(schism_cfg)["schism-config"],
+            controller=[self.driver_name()],
+            cycle=self.cycle,
+            schema_file="utils/schism/schism.jsonschema",
+        )
+        yield [
+            self.schism_bnd_inputs(),
+            self.schism_gr3_inputs(),
+            self.schism_tidal_inputs(),
+            cdeps.atm_nml(),
+            cdeps.atm_stream(),
+            schism.namelist_file(),
+            self.linked_files(),
+            self.model_configure(),
+            self.restart_dir(),
+            self.runscript(),
+            self.ufs_configure(),
+        ]
 
     @task
-    def _create_mesh(self):
+    def schism_update_config(self):
         """
-        Creates ESMF mesh file
+        The SCHISM namelist file.
         """
-        path = lambda fn: self.rundir / fn
-        yield self.taskname("Create ESMF mesh file")
-        # create mesh file
-        _res = create_esmf_mesh.gen_grid_def(os.path.join(self.rundir, 'combined.nc'), ff='mesh', output_dir=self.rundir)
-        # update cdeps config such as name of the mesh file and domain dimensions
-        global config
-        if 'cdeps' in config.keys():
-            if 'atm_in' in config['cdeps'].keys():
-                if 'datm_nml' in config['cdeps']['atm_in']['update_values'].keys():
-                    config['cdeps']['atm_in']['update_values']['datm_nml']['nx_global'] = _res['shape'][0] 
-                    config['cdeps']['atm_in']['update_values']['datm_nml']['ny_global'] = _res['shape'][1]
-                    config['cdeps']['atm_in']['update_values']['datm_nml']['model_maskfile'] = _res['output_file']
-                    config['cdeps']['atm_in']['update_values']['datm_nml']['model_meshfile'] = _res['output_file']
-            if 'atm_streams' in config['cdeps'].keys():
-                # TODO: we could have multiple streams that might use different dataset
-                if 'stream01' in config['cdeps']['atm_streams']['streams'].keys():
-                    config['cdeps']['atm_streams']['streams']['stream01']['stream_mesh_file'] = _res['output_file']
-        yield [asset(path(fn), path(fn).is_file) for fn in _res['output_file']]
-        yield None
-
-    @task
-    def _schism_config(self):
-        yield self.taskname("Update SCHISM configuration")
-        if 'schism' in config.keys():
-            if 'namelist' in config['schism'].keys():
-                if 'template_values' in config['schism']['namelist'].keys():
-                    config['schism']['namelist']['template_values']['start_year'] = self.cycle.year
-                    config['schism']['namelist']['template_values']['start_month'] = self.cycle.month
-                    config['schism']['namelist']['template_values']['start_day'] = self.cycle.day
-                    config['schism']['namelist']['template_values']['start_hour'] = self.cycle.hour
-                    config['schism']['namelist']['template_values']['utc_start'] = 0
-        yield None        
-        yield None
-
-    @task
-    def _model_configure(self):
-        fn = "model_configure"
-        yield self.taskname(f"main configuration file {fn}")
-        path = self.rundir / fn
-        yield asset(path, path.is_file)
-        template_file = '../templates/model_configure'
-        yield file(path=Path(template_file))
-        # Set simulation lenght based on input to find better solution
-        nhours_fcst = 24
-        if 'input' in self.config_full.keys():
-            if 'length' in self.config_full['input'].keys():
-                nhours_fcst = self.config_full['input']['length']
-        render(
-            input_file=template_file,
-            output_file=path,
-            overrides={'start_year' : self.cycle.year,
-                       'start_month': self.cycle.month,
-                       'start_day'  : self.cycle.day,
-                       'start_hour' : self.cycle.hour,
-                       'nhours_fcst': nhours_fcst,
-                       },
-            )
-
-    @task
-    def _ufs_configure(self):
-        fn = "ufs.configure"
-        yield self.taskname(f"main driver configuration file {fn}")
-        path = self.rundir / fn
-        yield asset(path, path.is_file)
-        template_file = '../templates/ufs.configure'
-        yield file(path=Path(template_file))
-        # Populate dictionary to process template
-        _dict = {}
-        _dict['driver'] = config['driver']
-        comps = config['driver']['componentList']
-        for comp in comps:
-            _dict[comp.lower()] = config[comp.lower()]
-        render(
-            input_file=template_file,
-            output_file=path,
-            overrides={'config': _dict},
-            )
-
-    def driver_name(self):
-        return "coastal"
+        path_schism_config = self.rundir / "schism.yaml"
+        yield self.taskname("SCHISM configuration")
+        yield {
+            "schism-config": asset(path_schism_config, path_schism_config.is_file)
+        }
+        config = self.config_full
+        config["schism"]["namelist"]["template_values"].update(
+            {
+                "start_year": self.cycle.year,
+                "start_month": self.cycle.month,
+                "start_day": self.cycle.day,
+                "start_hour": self.cycle.hour,
+                "utc_start": 0
+            }
+        )
+        YAMLConfig(config).dump(path_schism_config)

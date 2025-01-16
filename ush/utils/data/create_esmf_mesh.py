@@ -1,3 +1,5 @@
+from pathlib import Path
+import logging
 try:
     import os
     import sys
@@ -6,7 +8,6 @@ try:
     import dask.array as da
     import dask.dataframe as dd
     import subprocess
-    import logging
     from datetime import datetime
 except ImportError as ie:
     logging.error(str(ie))
@@ -102,10 +103,11 @@ def scrip_to_mesh(ifile, fout='mesh.nc', output_dir='./'):
             bindir = [x.strip().split('=')[1] for x in f.readlines() if 'ESMF_APPSDIR' in x]
             # Run command
             if bindir:
-                cmd = [ os.path.join(bindir[0], 'ESMF_Scrip2Unstruct'), ifile, ofile, '0' ]
-                logging.info("Running command - %s", ' '.join(cmd))
-                result = subprocess.run(cmd)
-                result.check_returncode()
+                exe = Path(bindir[0], 'ESMF_Scrip2Unstruct')
+                log = Path(ofile).parent / "mesh.log"
+                cmd = f"{exe} {ifile} {ofile} 0 >{log} 2>&1"                
+                logging.debug("Running: %s", cmd)
+                result = subprocess.check_call(cmd, cwd=Path(ofile).parent, shell=True)
 
     return(ofile)
 
