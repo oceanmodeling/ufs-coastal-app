@@ -1,5 +1,5 @@
 dir:
-  app: /work2/noaa/nems/tufuk/COASTAL/ufs-coastal-app-wf
+  app: /work2/noaa/nems/tufuk/COASTAL/ufs-coastal-app-test
   run: run
   data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_3236768/coastal_ike_shinnecock_atm2sch_intel
 platform:
@@ -21,90 +21,88 @@ coastal:
     mpiargs:
       - '--export=ALL'
     mpicmd: srun
-  forcing_data:
-    fxx: 0
-    length: 25
-    source: hrrr
-    subset: true
   links:
     fd_ufs.yaml: '{{ dir.app }}/sorc/ufs-weather-model/tests/parm/fd_ufs.yaml'
+    #INPUT/wind_atm_fin_ch_time_vec_ESMFmesh.nc: '{{ dir.data }}/INPUT/wind_atm_fin_ch_time_vec_ESMFmesh.nc'
+    #INPUT/wind_atm_fin_ch_time_vec_STR_fixed.nc: '{{ dir.data }}/INPUT/wind_atm_fin_ch_time_vec_STR_fixed.nc'
     hgrid.gr3: '{{ dir.data }}/hgrid.gr3'
     hgrid.ll: '{{ dir.data }}/hgrid.ll'
     vgrid.in: '{{ dir.data }}/vgrid.in'
   rundir: '{{ dir.run }}'
-driver:
-  componentList: [ATM, OCN, MED]
-  runSequence: |
-    @3600
-      ATM -> MED :remapMethod=redist
-      MED med_phases_post_atm
-      OCN -> MED :remapMethod=redist
-      MED med_phases_post_ocn
-      MED med_phases_prep_atm
-      MED med_phases_prep_ocn_accum
-      MED med_phases_prep_ocn_avg
-      MED -> ATM :remapMethod=redist
-      MED -> OCN :remapMethod=redist
-      ATM
-      OCN
-      MED med_phases_history_write
-      MED med_phases_restart_write
-    @
-  attributes:
-    Verbosity: low  
-  allcomp:
+nuopc:
+  driver:
+    componentList: [ATM, OCN, MED]
+    runSequence: |
+      @3600
+        ATM -> MED :remapMethod=redist
+        MED med_phases_post_atm
+        OCN -> MED :remapMethod=redist
+        MED med_phases_post_ocn
+        MED med_phases_prep_atm
+        MED med_phases_prep_ocn_accum
+        MED med_phases_prep_ocn_avg
+        MED -> ATM :remapMethod=redist
+        MED -> OCN :remapMethod=redist
+        ATM
+        OCN
+        MED med_phases_history_write
+        MED med_phases_restart_write
+      @
     attributes:
-      ScalarFieldCount: 3
-      ScalarFieldIdxGridNX: 1
-      ScalarFieldIdxGridNY: 2
-      ScalarFieldIdxNextSwCday: 3
-      ScalarFieldName: cpl_scalars
-      start_type: startup
-      restart_dir: RESTART/
-      case_name: ufs.cpld
-      restart_n: 12
-      restart_option: nhours
-      restart_ymd: -999
-      orb_eccen: 1.e36
-      orb_iyear: 2000
-      orb_iyear_align: 2000
-      orb_mode: fixed_year
-      orb_mvelp: 1.e36
-      orb_obliq: 1.e36
-      stop_n: 24
-      stop_option: nhours
-      stop_ymd: -999
-med:
-  model: cmeps
-  petlist_bounds: 0-2
-  omp_num_threads: 1
-  attributes:
-    history_n: 1
-    history_option: nsteps
-    history_ymd: -999
-    coupling_mode: coastal
-atm:
-  model: datm
-  petlist_bounds: 0-2
-  omp_num_threads: 1
-  attributes:
-    Verbosity: 0
-    DumpFields: false
-    ProfileMemory: false
-    OverwriteSlice: true
-ocn:
-  model: schism
-  petlist_bounds: 3-5
-  omp_num_threads: 1
-  attributes:
-    Verbosity: 0
-    DumpFields: false
-    ProfileMemory: false
-    OverwriteSlice: true
-    meshloc: element
-    CouplingConfig: none
+      Verbosity: low  
+    allcomp:
+      attributes:
+        ScalarFieldCount: 3
+        ScalarFieldIdxGridNX: 1
+        ScalarFieldIdxGridNY: 2
+        ScalarFieldIdxNextSwCday: 3
+        ScalarFieldName: cpl_scalars
+        start_type: startup
+        restart_dir: RESTART/
+        case_name: ufs.cpld
+        restart_n: 12
+        restart_option: nhours
+        restart_ymd: -999
+        orb_eccen: 1.e36
+        orb_iyear: 2000
+        orb_iyear_align: 2000
+        orb_mode: fixed_year
+        orb_mvelp: 1.e36
+        orb_obliq: 1.e36
+        stop_n: 24
+        stop_option: nhours
+        stop_ymd: -999
+  med:
+    model: cmeps
+    petlist_bounds: 0-2
+    omp_num_threads: 1
+    attributes:
+      history_n: 1
+      history_option: nsteps
+      history_ymd: -999
+      coupling_mode: coastal
+  atm:
+    model: datm
+    petlist_bounds: 0-2
+    omp_num_threads: 1
+    attributes:
+      Verbosity: 0
+      DumpFields: false
+      ProfileMemory: false
+      OverwriteSlice: true
+  ocn:
+    model: schism
+    petlist_bounds: 3-5
+    omp_num_threads: 1
+    attributes:
+      Verbosity: 0
+      DumpFields: false
+      ProfileMemory: false
+      OverwriteSlice: true
+      meshloc: element
+      CouplingConfig: none
 cdeps:
-  atm_in:
+  datm:
     update_values:
       datm_nml:
         datamode: ATMMESH
@@ -116,23 +114,29 @@ cdeps:
         flds_wiso: false
         iradsw: 1
         restfilm: 'null'
-  atm_streams:
     streams:
       stream01:
-        dtlimit: 1.5
+        taxmode: limit
         mapalgo: redist
-        readmode: single
-        stream_data_files: [combined.nc]
-        stream_data_variables: [u10 Sa_u10m, v10 Sa_v10m, mslma Sa_pslv ]
-        stream_lev_dimname: 'null'
-        stream_offset: 0
-        stream_vectors: 'null'
-        taxmode: limit 
         tinterpalgo: linear
+        readmode: single
+        dtlimit: 1.5
+        stream_offset: 0
         yearAlign: 2024
         yearFirst: 2024
         yearLast: 2024
-    template_file: ../templates/cdeps.streams
+        stream_vectors: 'null'
+        stream_lev_dimname: 'null'
+        stream_data_variables: [u10 Sa_u10m, v10 Sa_v10m, mslma Sa_pslv ]
+        data:
+          protocol: herbie
+          source: hrrr
+          length: 24 
+          fxx: 0
+          subset: true
+          combine: false
+          target_directory: 'INPUT'
+  template_file: ../templates/cdeps.streams
 schism:
   hgrid: '{{ dir.data }}/hgrid.gr3'
   vgrid: '{{ dir.data }}/vgrid.in'

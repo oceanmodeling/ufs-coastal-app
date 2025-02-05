@@ -374,7 +374,7 @@
 ! If WWM is enabled and icou_elfe_wwm>0 and iwind_form=-2, stress is overwritten by WWM.
 ! In all cases, if USE_ICE the stress in ice-covered portion is calculated by ICE routine.
 !-----------------------------------------------------------------------
-  nws = 2 
+  nws = 4 
   wtiminc = 200. !time step for atmos. forcing
 !  nrampwind = 1 !ramp-up option for atmos. forcing
   drampwind = 1. !needed if nrampwind/=0; ramp-up period in days

@@ -2,8 +2,9 @@
 A driver for the Coastal App coupled executable.
 """
 
-import logging
+import os
 import sys
+import logging
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -21,8 +22,8 @@ sys.path.append(str(Path(__file__).parent))
 
 # pylint: disable=wrong-import-position
 
-from utils.data.create_esmf_mesh import gen_grid_def
-from utils.data.get_hrrr import download
+from utils.data.esmf import create_grid_definition 
+from utils.data.get_input import download
 from utils.schism import gen_bctides, gen_bnd, gen_gr3
 from utils.schism.utils import bounding_rectangle_2d
 
@@ -38,23 +39,117 @@ class Coastal(DriverCycleBased):
         return "coastal"
 
     @task
-    def forcing_data(self):
+    def cdeps_data(self):
         """
-        Forcing data.
+        CDEPS forcing data.
         """
-        path = self.rundir / "combined.nc"
-        yield self.taskname("Forcing data")
-        yield asset(path, path.is_file)
-        yield None
-        config_fd = self.config["forcing_data"]
-        hgrid = self.config_full["schism"]["hgrid"]
-        bbox = bounding_rectangle_2d(hgrid) if config_fd["subset"] else None
-        logging.debug("%s Using bounding box: %s", self.taskname(""), bbox)
+        config_fd = {}
+        config = self.config_full
+        # List of arguments that need to be checked for consistency
+        arg_list = [
+            "nx_global",
+            "ny_global",
+            "model_maskfile",
+            "model_meshfile"
+        ]
+        # Loop over each cdeps sub-component
+        for comp in config["cdeps"].keys():
+            if comp == "template_file":
+                continue
+            # Check if streams section exists (atm_streams, ocn_streams, etc.)
+            if "streams" in config["cdeps"][comp].keys():
+                for key, val in config["cdeps"][comp]["streams"].items():
+                    # Check data section for stream to retrive
+                    if "data" in val.keys():
+                        if not comp in config_fd.keys():
+                            config_fd[comp] = {}
+                        config_fd[comp][key] = val
+                        # Check for combine option 
+                        combine = False
+                        if "herbie" in val["data"]["protocol"]:
+                            logging.info("Data protocol is set to 'herbie' for {}/{}. Set combine as True".format(comp, key))
+                            combine = True
+                        else:
+                            if "combine" in val["data"].keys():
+                                combine = val["data"]["combine"]
+                        # Check for target directory
+                        target_dir = "INPUT"
+                        if "target_directory" in val["data"].keys():
+                            target_dir = val["data"]["target_directory"]
+                        if not os.path.abspath(target_dir) or not os.path.isdir(target_dir):
+                            target_dir = os.path.join(self.rundir, target_dir)
+                        config_fd[comp][key]["data"]["target_directory"] = target_dir
+                        # Check for stream data files
+                        if not "stream_data_files" in val.keys() and combine:
+                            fn = "combined_{}_stream{}.nc".format(comp, key[6:9])
+                            config_fd[comp][key]["stream_data_files"] = [ os.path.join(target_dir, fn) ]
+                        else:
+                            config_fd[comp][key]["stream_data_files"] = []
+                            for fn in val["data"]["files"]:
+                                config_fd[comp][key]["stream_data_files"].append(os.path.join(target_dir, os.path.basename(fn)))
+                        # Check for mesh file
+                        if not "stream_mesh_file" in val.keys():
+                            fn = "mesh_{}_stream{}.nc".format(comp, key[6:9])
+                            config_fd[comp][key]["stream_mesh_file"] = os.path.join(target_dir, fn)
+        # Create run directory if it is not done before
         self.rundir.mkdir(parents=True, exist_ok=True)
-        with open(self.rundir / "combined.log", "w", encoding="utf-8") as f:
+        # Get bounding box to subset data if it is requested
+        bbox = self._bounding_box()
+        # Retrieve data for each stream and component if it is requested
+        files = []
+        with open(self.rundir / "cdeps.log", "w", encoding="utf-8") as f:
             with redirect_stdout(f):
-                logging.info("%s Downloading forcing data", self.taskname(""))
-                download(config_fd, self.cycle, bbox, combine=True, output_dir=self.rundir)
+                for comp in config_fd.keys():
+                    for key, cfg in config_fd[comp].items():
+                        logging.info("%s Downloading forcing data for %s and %s", self.taskname(""), comp, key)
+                        # Check subset option
+                        subset = False
+                        if "subset" in config_fd[comp][key]["data"].keys():
+                            subset = config_fd[comp][key]["data"]["subset"]
+                        # Retrieve data for stream
+                        output_file = config_fd[comp][key]["stream_data_files"][0]
+                        if subset:
+                            download(cfg, self.cycle, bbox=bbox)
+                        else:
+                            download(cfg, self.cycle, bbox=None)
+                        files.append(Path(output_file))
+                        # Create ESMF mesh
+                        input_file = output_file
+                        output_file = config_fd[comp][key]["stream_mesh_file"]
+                        out = create_grid_definition(input_file, output_file=output_file, ff='mesh', output_dir=self.rundir)
+                        files.append(Path(output_file))
+                        # Update configuration
+                        if not "nx_global" in config["cdeps"][comp]["update_values"]["{}_nml".format(comp)].keys():
+                            config["cdeps"][comp]["update_values"]["{}_nml".format(comp)].update(
+                                {
+                                    "nx_global": out['shape'][0],
+                                    "ny_global": out['shape'][1],
+                                    "model_maskfile": out['output_file'],
+                                    "model_meshfile": out['output_file']
+                                }
+                            )
+        # Additional check for cdeps data component 
+        for comp in config["cdeps"].keys():
+            if comp == "template_file":
+                continue
+            if "{}_nml".format(comp) in config["cdeps"][comp]["update_values"].keys():
+                force_to_exit = False
+                for item in arg_list:
+                    if not item in config["cdeps"][comp]["update_values"]["{}_nml".format(comp)].keys():
+                        logging.error("Missing {} in {}/update_values/{}_nml section!".format(item, comp, comp))
+                        force_to_exit = True
+                if force_to_exit:
+                    sys.exit(1)
+        # Create file that has modified CDEPS configuration
+        path_cdeps_config = self.rundir / "cdeps.yaml"
+        YAMLConfig(config).dump(path_cdeps_config)
+        # Task related definitions
+        yield self.taskname("CDEPS forcing data")
+        yield {
+            "cdeps-config": asset(path_cdeps_config, path_cdeps_config.is_file),
+            "cdeps-files": [asset(fn, fn.is_file) for fn in files],
+        }
+        yield None
 
     @task
     def linked_files(self):
@@ -67,36 +162,6 @@ class Coastal(DriverCycleBased):
         yield [asset(path(fn), path(fn).is_file) for fn in links]
         yield None
         link(config=links, target_dir=self.rundir)
-
-    @task
-    def mesh_file(self):
-        """
-        The ESMF mesh file.
-        """
-        path_cdeps_config = self.rundir / "cdeps.yaml"
-        path_mesh_file = self.rundir / "mesh.nc"
-        yield self.taskname("ESMF mesh file")
-        yield {
-            "cdeps-config": asset(path_cdeps_config, path_cdeps_config.is_file),
-            "mesh-file": asset(path_mesh_file, path_mesh_file.is_file),
-        }
-        forcing_data = self.forcing_data()
-        yield forcing_data
-        self.rundir.mkdir(parents=True, exist_ok=True)
-        res = gen_grid_def(refs(forcing_data), ff="mesh", output_dir=self.rundir)
-        outfile = res["output_file"]
-        config = self.config_full
-        config["cdeps"]["atm_in"]["update_values"]["datm_nml"].update(
-            {
-                "nx_global": res["shape"][0],
-                "ny_global": res["shape"][1],
-                "model_maskfile": outfile,
-                "model_meshfile": outfile,
-            }
-        )
-        # NB: We could have multiple streams that might use different dataset.
-        config["cdeps"]["atm_streams"]["streams"]["stream01"]["stream_mesh_file"] = outfile
-        YAMLConfig(config).dump(path_cdeps_config)
 
     @task
     def model_configure(self):
@@ -138,9 +203,9 @@ class Coastal(DriverCycleBased):
         template_file = "../templates/ufs.configure"
         yield file(path=Path(template_file))
         config = self.config_full
-        d = {"driver": config["driver"]}
-        for component in config["driver"]["componentList"]:
-            d[component.lower()] = config[component.lower()]
+        d = {"driver": config["nuopc"]["driver"]}
+        for component in config["nuopc"]["driver"]["componentList"]:
+            d[component.lower()] = config["nuopc"][component.lower()]
         render(input_file=template_file, output_file=path, overrides={"config": d})
 
     @task
@@ -199,13 +264,15 @@ class Coastal(DriverCycleBased):
         The run directory provisioned with all required content.
         """
         yield self.taskname("Provisioned run directory")
-        mesh_file = self.mesh_file()
+        #self._run_duration()
+        cdeps_cfg = self.cdeps_data()
         cdeps = CDEPS(
-            config=refs(mesh_file)["cdeps-config"],
+            config=refs(cdeps_cfg["cdeps-config"]),
             controller=[self.driver_name()],
             cycle=self.cycle,
+            schema_file="utils/cdeps/cdeps.jsonschema",
         )
-        schism_cfg = self.schism_update_config() 
+        schism_cfg = self._schism_update_config() 
         schism = SCHISM(
             config=refs(schism_cfg)["schism-config"],
             controller=[self.driver_name()],
@@ -213,21 +280,21 @@ class Coastal(DriverCycleBased):
             schema_file="utils/schism/schism.jsonschema",
         )
         yield [
+            self.linked_files(),
+            cdeps.atm_nml(),
+            cdeps.atm_stream(),
             self.schism_bnd_inputs(),
             self.schism_gr3_inputs(),
             self.schism_tidal_inputs(),
-            cdeps.atm_nml(),
-            cdeps.atm_stream(),
             schism.namelist_file(),
-            self.linked_files(),
             self.model_configure(),
+            self.ufs_configure(),
             self.restart_dir(),
             self.runscript(),
-            self.ufs_configure(),
         ]
 
     @task
-    def schism_update_config(self):
+    def _schism_update_config(self):
         """
         The SCHISM namelist file.
         """
@@ -236,6 +303,7 @@ class Coastal(DriverCycleBased):
         yield {
             "schism-config": asset(path_schism_config, path_schism_config.is_file)
         }
+        yield None
         config = self.config_full
         config["schism"]["namelist"]["template_values"].update(
             {
@@ -247,3 +315,48 @@ class Coastal(DriverCycleBased):
             }
         )
         YAMLConfig(config).dump(path_schism_config)
+
+    # Private helper methods
+
+    def _bounding_box(self):
+        """
+        Returns bounding box based on used component and its mesh
+        Return value: [minlon, minlat, maxlon, maxlat]
+        """
+        bbox = None
+        if "schism" in self.config_full:
+            hgrid = self.config_full["schism"]["hgrid"]
+            bbox = bounding_rectangle_2d(hgrid)
+        return bbox
+
+    def _run_duration(self):
+        """
+        Returns run duration for the simulation.
+        """
+        config = self.config_full
+        run_duration = 0
+        if "nuopc" in config.keys():
+            if "driver" in config["nuopc"].keys():
+                if "allcomp" in config["nuopc"]["driver"].keys():
+                    if "attributes" in config["nuopc"]["driver"]["allcomp"].keys():
+                         unit = config["nuopc"]["driver"]["allcomp"]["stop_option"]
+                         if unit == 'nhours':
+                             run_duration = config["nuopc"]["driver"]["allcomp"]["stop_n"]
+                         elif unit == 'ndays':
+                             run_duration = config["nuopc"]["driver"]["allcomp"]["stop_n"]*24
+                         else:
+                             logging.error("stop_option option can only be nhours or ndays!")
+                             sys.exit(1)
+                elif "med" in config["nuopc"]["driver"].keys():
+                    if "attributes" in config["nuopc"]["driver"]["med"].keys():
+                         unit = config["nuopc"]["driver"]["med"]["stop_option"]
+                         if unit == 'nhours':
+                             run_duration = config["nuopc"]["driver"]["med"]["stop_n"]
+                         elif unit == 'ndays':
+                             run_duration = config["nuopc"]["driver"]["med"]["stop_n"]*24
+                         else:
+                             logging.error("stop_option option can only be nhours or ndays!")
+                             sys.exit(1)
+                else:
+                    logging.info("no way to determine run duration.")
+        return run_duration

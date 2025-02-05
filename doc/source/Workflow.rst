@@ -125,17 +125,28 @@ In this case, `pyschism <https://github.com/schism-dev/pyschism>`_ is used to pr
 Components of Workflow
 ======================
 
-The workflow related files are found in two different directories under main source directory; ``templates/`` and ``ush/``. In this case, the template files are using `Jinja <https://jinja.palletsprojects.com/en/stable/>`_ format to define component specific namelist files. The ``ush/`` directory includes UFS Coastal application specific scripts and configuration files that are used by the ``uwtools`` workflow environment.
+The UFS Coastal Application workflow is leveraging ``uwtools`` provided workflow engine called as `iotaa - It's One Thing After Another <https://github.com/maddenp/iotaa>`_ but there is also  plan to support `ecFlow <https://confluence.ecmwf.int/display/ECFLOW>`_ as workflow manager under UFS Coastal Application when it is available through the ``uwtools``.
 
-The current version of the workflow is leveraging a simple ``uwtools`` provided workflow engine called as `iotaa - It's One Thing After Another <https://github.com/maddenp/iotaa>`_ but there is a plan to support `ecFlow <https://confluence.ecmwf.int/display/ECFLOW>`_ workflow manager as a part of the UFS Coastal Application when it is supported by ``uwtools``.
+The workflow related files are found in two different directories under main source directory; `templates/ <https://github.com/oceanmodeling/ufs-coastal-app/tree/main/templates>`_ and `ush/ <https://github.com/oceanmodeling/ufs-coastal-app/tree/main/ush>`_. The `Jinja <https://jinja.palletsprojects.com/en/stable/>`_ formatted template files is used by the workflow to generate component specific namelist files. The ``ush/`` directory includes UFS Coastal workflow specific scripts and configuration files that are used by the ``uwtools`` workflow environment.
 
 .. note::
-   The initial version of workflow only supports DATM-SCHISM configuration but it will be improved to cover other UFS Coastal specific configurations in the near future.
+   At this point, the initial version of the workflow supports only DATM-SCHISM configuration but the workflow will be enhanced to cover also other UFS Coastal specific configurations such as DATM-SCHISM-WW3 and DATM-ROMS in the near future.
 
 Main configuration file ``coastal.yaml``
 ----------------------------------------
 
-This section includes detailed information about the main configuration file (``coastal.yaml`` that is found under ``ush/`` directory) and the parameters used in each section. The YAML formatted file includes multiple sections to define entire end-to-end workflow. Each supported configuration has its own template ``coastal.yaml`` file. To run a configuration through the workflow, the user needs to copy one of the template file as ``coastal.yaml`` and customize it based on selected configuration.
+This section includes detailed information about the main configuration file (`coastal.yaml <https://github.com/oceanmodeling/ufs-coastal-app/blob/main/ush/coastal.yaml>`_) and the sections that are found in it. The YAML formatted file includes various sections to define entire end-to-end workflow and parameters related with the desired model configuration. Each supported configuration has its own template file such as ``config_atm2sch.yaml`` for DATM-SCHISM configuration. To run a configuration through the workflow, the might copy one of the template file as ``coastal.yaml`` and customize it based on desired configuration.
+
+.. code-block:: yaml
+
+   dir:
+     app: /work2/noaa/nems/tufuk/COASTAL/ufs-coastal-app-wf
+     run: run
+     data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_3236768/coastal_ike_shinnecock_atm2sch_intel
+   platform:
+     account: nems
+     scheduler: slurm
+
 
 The following tables mainly describes the options that can be used in the ``coastal.yaml``. Some of those options are configuration specific. For example, ``schism`` section is only required when configuration includes SCHISM ocean model component but ``coastal`` or ``platform`` sections are required for all the configurations.
 

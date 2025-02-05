@@ -13,19 +13,42 @@ except ImportError as ie:
     logging.error(str(ie))
     sys.exit()
 
-def gen_grid_def(ifile, mask_var=None, ff='scrip', output_dir='./'):
+def create_grid_definition(input_file, output_file='mesh.nc', mask_var=None, ff='scrip', output_dir='./'):
+    """
+    Create grid definition file in SCRIP or ESMF Mesh format
+    """
     # Open input file
-    if os.path.isfile(ifile):
-        ds = xr.open_dataset(ifile, mask_and_scale=False, decode_times=False)
+    if os.path.isfile(input_file):
+        ds = xr.open_dataset(input_file, mask_and_scale=False, decode_times=False)
     else:
-        logging.error("Input file %s could not find!", ifile)
+        logging.error("Input file %s could not find!", input_file)
         sys.exit()
 
+    # Set output file name
+    if os.path.isabs(output_file):
+        ofile = output_file
+    else:
+        ofile = os.path.join(output_dir, output_file)
+
     # Get coordinate information
-    xc = ds['longitude']
-    xc = xc.rename({'longitude': 'x'})
-    yc = ds['latitude']
-    yc = yc.rename({'latitude': 'y'})
+    if 'longitude' in ds.keys():
+        xc = ds['longitude']
+        xc = xc.rename({'longitude': 'x'})
+    elif 'lon' in ds.keys():
+        xc = ds['lon']
+        xc = xc.rename({'lon': 'x'})
+    else:
+        xc = ds['geolon']
+        xc = xc.rename({'geolon': 'x'})
+    if 'latitude' in ds.keys():
+        yc = ds['latitude']
+        yc = yc.rename({'latitude': 'y'})
+    elif 'lat' in ds.keys():
+        yc = ds['lat']
+        yc = yc.rename({'lat': 'y'})
+    else:
+        yc = ds['geolat']
+        yc = xc.rename({'geolat': 'y'})
 
     # Process coordinate information if it is required
     rank = len(xc.dims)
@@ -39,25 +62,27 @@ def gen_grid_def(ifile, mask_var=None, ff='scrip', output_dir='./'):
         xc = xc.to_numpy()
         yc = yc.to_numpy()
 
-    # Get mask information
-    if mask_var:
-        mc = np.ndarray.flatten(ds[mask_var].to_numpy())
-    else:
-        mc = np.ones(xc.size, dtype=np.int32)
+    # Check file
+    if not os.path.isfile(ofile):
+        # Get mask information
+        if mask_var:
+            mc = np.ndarray.flatten(ds[mask_var].to_numpy())
+        else:
+            mc = np.ones(xc.size, dtype=np.int32)
 
-    # Calculate corner coordinates
-    xc_1, yc_1, xo_2, yo_2 = calc_corners(xc, yc)
+        # Calculate corner coordinates
+        xc_1, yc_1, xo_2, yo_2 = calc_corners(xc, yc)
 
-    # Write to file 
-    if ff == 'mesh':
-        ofile = to_scrip(xc_1, yc_1, xo_2, yo_2, mc, xc.shape[::-1], output_dir=output_dir)
-        ofile = scrip_to_mesh(ofile, output_dir=output_dir)
-    else:
-        ofile = to_scrip(xc_1, yc_1, xo_2, yo_2, mc, xc.shape[::-1], output_dir=output_dir)
+        # Write to file 
+        if ff == 'mesh':
+            fn = to_scrip(xc_1, yc_1, xo_2, yo_2, mc, xc.shape[::-1], output_dir=os.path.dirname(ofile))
+            ofile = scrip_to_mesh(fn, output_file=ofile, output_dir=output_dir)
+        else:
+            ofile = to_scrip(xc_1, yc_1, xo_2, yo_2, mc, xc.shape[::-1], output_dir=output_dir)
 
     return({'output_file': ofile, 'shape': xc.shape[::-1]})
 
-def to_scrip(xc, yc, xo, yo, mc, dims, fout='scrip.nc', output_dir='./'):
+def to_scrip(xc, yc, xo, yo, mc, dims, output_file='scrip.nc', output_dir='./'):
     """
     Writes grid in SCRIP format
     """
@@ -85,16 +110,19 @@ def to_scrip(xc, yc, xo, yo, mc, dims, fout='scrip.nc', output_dir='./'):
                  'conventions': 'SCRIP'}
 
     # Write dataset
-    ofile = os.path.join(output_dir, fout)
+    ofile = os.path.join(output_dir, output_file)
     out.to_netcdf(ofile)
     return(ofile)
 
-def scrip_to_mesh(ifile, fout='mesh.nc', output_dir='./'):
+def scrip_to_mesh(input_file, output_file='mesh.nc', output_dir='./'):
     """
     Convert scrip.nc to ESMF mesh format using ESMF_Scrip2Unstruct tool
     """
     # Set output file name
-    ofile = os.path.join(output_dir, fout)
+    if os.path.isabs(output_file):
+        ofile = output_file
+    else:
+        ofile = os.path.join(output_dir, output_file)
 
     # Check ESMFMKFILE environment variable to find out location of executable
     if os.environ['ESMFMKFILE']:
@@ -105,8 +133,9 @@ def scrip_to_mesh(ifile, fout='mesh.nc', output_dir='./'):
             if bindir:
                 exe = Path(bindir[0], 'ESMF_Scrip2Unstruct')
                 log = Path(ofile).parent / "mesh.log"
-                cmd = f"{exe} {ifile} {ofile} 0 >{log} 2>&1"                
-                logging.debug("Running: %s", cmd)
+                cmd = f"{exe} {input_file} {ofile} 0 >{log} 2>&1"                
+                #logging.debug("Running: %s", cmd)
+                print("Running: %s", cmd)
                 result = subprocess.check_call(cmd, cwd=Path(ofile).parent, shell=True)
 
     return(ofile)
