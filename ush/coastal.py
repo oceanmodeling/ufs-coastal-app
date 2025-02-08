@@ -1,10 +1,7 @@
-"""
-A driver for the Coastal App coupled executable.
-"""
-
 import os
 import sys
 import logging
+from datetime import timedelta
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -24,6 +21,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from utils.data.esmf import create_grid_definition 
 from utils.data.get_input import download
+from utils.data.shared import get_time_range 
 from utils.schism import gen_bctides, gen_bnd, gen_gr3
 from utils.schism.utils import bounding_rectangle_2d
 
@@ -140,6 +138,22 @@ class Coastal(DriverCycleBased):
                         force_to_exit = True
                 if force_to_exit:
                     sys.exit(1)
+        # Find out year align, first and last to update cdeps stream configurations
+        for comp in config["cdeps"].keys():
+            if comp == "template_file":
+                continue
+            for key, cfg in config["cdeps"][comp]["streams"].items():
+                date_first, date_last = get_time_range(cfg["stream_data_files"], self.rundir)
+                year_first = date_first.year
+                year_last = date_last.year
+                # Update configuration
+                config["cdeps"][comp]["streams"][key].update(
+                    {
+                        "yearAlign": year_first,
+                        "yearFirst": year_first,
+                        "yearLast" : year_last
+                    }
+                )
         # Create file that has modified CDEPS configuration
         path_cdeps_config = self.rundir / "cdeps.yaml"
         YAMLConfig(config).dump(path_cdeps_config)
@@ -164,7 +178,7 @@ class Coastal(DriverCycleBased):
         link(config=links, target_dir=self.rundir)
 
     @task
-    def model_configure(self):
+    def _model_configure(self, run_duration):
         """
         The model_configure file.
         """
@@ -174,11 +188,6 @@ class Coastal(DriverCycleBased):
         yield asset(path, path.is_file)
         template_file = "../templates/model_configure"
         yield file(path=Path(template_file))
-        # NB: Set simulation lenght based on input until to find better solution
-        nhours_fcst = 24
-        if 'forcing_data' in self.config.keys():
-            if 'length' in self.config['forcing_data'].keys():
-                nhours_fcst = self.config['forcing_data']['length']
         render(
             input_file=template_file,
             output_file=path,
@@ -187,7 +196,7 @@ class Coastal(DriverCycleBased):
                 "start_month": self.cycle.month,
                 "start_day": self.cycle.day,
                 "start_hour": self.cycle.hour,
-                "nhours_fcst": nhours_fcst,
+                "nhours_fcst": run_duration,
             },
         )
 
@@ -225,13 +234,16 @@ class Coastal(DriverCycleBased):
         Generate boundary files
         """
         path = lambda fn: self.rundir / fn
-        hgrid = self.config_full["schism"]["hgrid"]
-        vgrid = self.config_full["schism"]["vgrid"]
-        ocean_bnd_ids = self.config_full["schism"]["ocean_bnd_ids"]
-        bnd_vars = self.config_full["schism"]["boundary_vars"]
         yield self.taskname("SCHSIM boundary input files")
-        _files = gen_bnd.execute(hgrid, vgrid, self.cycle, 1, ocean_bnd_ids=ocean_bnd_ids, output_dir=self.rundir, output_vars=bnd_vars)
-        yield [asset(path(fn), path(fn).is_file) for fn in _files]
+        if "boundary" in self.config_full["schism"].keys():
+            hgrid = self.config_full["schism"]["hgrid"]
+            vgrid = self.config_full["schism"]["vgrid"]
+            ocean_bnd_ids = self.config_full["schism"]["boundary"]["ids"]
+            bnd_vars = self.config_full["schism"]["boundary"]["vars"]
+            _files = gen_bnd.execute(hgrid, vgrid, self.cycle, 1, ocean_bnd_ids=ocean_bnd_ids, output_dir=self.rundir, output_vars=bnd_vars)
+            yield [asset(path(fn), path(fn).is_file) for fn in _files]
+        else:
+            yield None
         yield None
 
     @task
@@ -254,8 +266,11 @@ class Coastal(DriverCycleBased):
         path = lambda fn: self.rundir / fn
         schism = self.config_full["schism"]
         yield self.taskname("SCHSIM tidal input files")
-        _files = gen_bctides.execute(schism, self.cycle, 1, output_dir=self.rundir) 
-        yield [asset(path(fn), path(fn).is_file) for fn in _files]
+        if "bctides" in self.config_full["schism"].keys():
+            _files = gen_bctides.execute(schism, self.cycle, 1, output_dir=self.rundir)
+            yield [asset(path(fn), path(fn).is_file) for fn in _files]
+        else:
+            yield None
         yield None
 
     @tasks
@@ -264,7 +279,8 @@ class Coastal(DriverCycleBased):
         The run directory provisioned with all required content.
         """
         yield self.taskname("Provisioned run directory")
-        #self._run_duration()
+        run_duration = self._run_duration()
+        self.linked_files()
         cdeps_cfg = self.cdeps_data()
         cdeps = CDEPS(
             config=refs(cdeps_cfg["cdeps-config"]),
@@ -272,7 +288,7 @@ class Coastal(DriverCycleBased):
             cycle=self.cycle,
             schema_file="utils/cdeps/cdeps.jsonschema",
         )
-        schism_cfg = self._schism_update_config() 
+        schism_cfg = self._schism_update_config(run_duration) 
         schism = SCHISM(
             config=refs(schism_cfg)["schism-config"],
             controller=[self.driver_name()],
@@ -280,21 +296,20 @@ class Coastal(DriverCycleBased):
             schema_file="utils/schism/schism.jsonschema",
         )
         yield [
-            self.linked_files(),
             cdeps.atm_nml(),
             cdeps.atm_stream(),
             self.schism_bnd_inputs(),
             self.schism_gr3_inputs(),
             self.schism_tidal_inputs(),
             schism.namelist_file(),
-            self.model_configure(),
+            self._model_configure(run_duration),
             self.ufs_configure(),
             self.restart_dir(),
             self.runscript(),
         ]
 
     @task
-    def _schism_update_config(self):
+    def _schism_update_config(self, run_duration):
         """
         The SCHISM namelist file.
         """
@@ -311,7 +326,8 @@ class Coastal(DriverCycleBased):
                 "start_month": self.cycle.month,
                 "start_day": self.cycle.day,
                 "start_hour": self.cycle.hour,
-                "utc_start": 0
+                "utc_start": 0, 
+                "rnday": run_duration / 24.0
             }
         )
         YAMLConfig(config).dump(path_schism_config)
@@ -334,26 +350,27 @@ class Coastal(DriverCycleBased):
         Returns run duration for the simulation.
         """
         config = self.config_full
-        run_duration = 0
+        run_duration = 6 
+        # Find out run duration
         if "nuopc" in config.keys():
             if "driver" in config["nuopc"].keys():
                 if "allcomp" in config["nuopc"]["driver"].keys():
                     if "attributes" in config["nuopc"]["driver"]["allcomp"].keys():
-                         unit = config["nuopc"]["driver"]["allcomp"]["stop_option"]
+                         unit = config["nuopc"]["driver"]["allcomp"]["attributes"]["stop_option"]
                          if unit == 'nhours':
-                             run_duration = config["nuopc"]["driver"]["allcomp"]["stop_n"]
+                             run_duration = config["nuopc"]["driver"]["allcomp"]["attributes"]["stop_n"]
                          elif unit == 'ndays':
-                             run_duration = config["nuopc"]["driver"]["allcomp"]["stop_n"]*24
+                             run_duration = config["nuopc"]["driver"]["allcomp"]["attributes"]["stop_n"]*24
                          else:
                              logging.error("stop_option option can only be nhours or ndays!")
                              sys.exit(1)
                 elif "med" in config["nuopc"]["driver"].keys():
                     if "attributes" in config["nuopc"]["driver"]["med"].keys():
-                         unit = config["nuopc"]["driver"]["med"]["stop_option"]
+                         unit = config["nuopc"]["driver"]["med"]["attributes"]["stop_option"]
                          if unit == 'nhours':
-                             run_duration = config["nuopc"]["driver"]["med"]["stop_n"]
+                             run_duration = config["nuopc"]["driver"]["med"]["attributes"]["stop_n"]
                          elif unit == 'ndays':
-                             run_duration = config["nuopc"]["driver"]["med"]["stop_n"]*24
+                             run_duration = config["nuopc"]["driver"]["med"]["attributes"]["stop_n"]*24
                          else:
                              logging.error("stop_option option can only be nhours or ndays!")
                              sys.exit(1)

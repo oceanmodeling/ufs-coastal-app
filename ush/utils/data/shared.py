@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import xarray as xr
+from datetime import datetime
 import logging
 import warnings
 
@@ -30,3 +32,18 @@ def bbox_mask(ds, bbox):
     mask[istart:iend+1,jstart:jend+1] = True
     # Return mask
     return(mask)
+
+def get_time_range(input_files, run_dir):
+    """
+    Returns date range
+    """
+    # Open data files and combine them
+    input_files_with_dir = [os.path.join(run_dir, fn) for fn in input_files]
+    ds = xr.open_mfdataset(input_files_with_dir, combine='nested', concat_dim='time', coords='minimal', compat='override', engine='netcdf4')
+    # Get time information
+    time = ds['time'].dt.strftime('%Y-%m-%d %H:%M').to_numpy()
+    # Return first and last time information 
+    first_date = datetime.strptime(time[0], '%Y-%m-%d %H:%M')
+    last_date = datetime.strptime(time[time.size-1], '%Y-%m-%d %H:%M')
+    logging.info('First and last dates found in stream file: {}, {}'.format(time[0], time[time.size-1]))
+    return(first_date, last_date)

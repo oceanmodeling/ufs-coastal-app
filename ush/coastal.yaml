@@ -1,7 +1,7 @@
 dir:
-  app: /work2/noaa/nems/tufuk/COASTAL/ufs-coastal-app-test
+  app: "{{ 'PWD' | env }}/.."
   run: run
-  data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_3236768/coastal_ike_shinnecock_atm2sch_intel
+  data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_2645249/coastal_ike_shinnecock_atm2sch_intel
 platform:
   account: nems
   scheduler: slurm
@@ -10,21 +10,23 @@ coastal:
     batchargs:
       cores: 6
       export: NONE
-      jobname: coastal
+      jobname: atm2sch
+      stderr: err
+      stdout: out
       partition: hercules
       queue: batch
       walltime: '00:30:00'
     envcmds:
       - module use {{ dir.app }}/sorc/ufs-weather-model/modulefiles
       - module load ufs_hercules.intel
+      - export ESMF_RUNTIME_PROFILE=ON
+      - export ESMF_RUNTIME_PROFILE_OUTPUT="SUMMARY"
     executable: "{{ dir.app }}/install/bin/ufs_model"
     mpiargs:
       - '--export=ALL'
     mpicmd: srun
   links:
     fd_ufs.yaml: '{{ dir.app }}/sorc/ufs-weather-model/tests/parm/fd_ufs.yaml'
-    #INPUT/wind_atm_fin_ch_time_vec_ESMFmesh.nc: '{{ dir.data }}/INPUT/wind_atm_fin_ch_time_vec_ESMFmesh.nc'
-    #INPUT/wind_atm_fin_ch_time_vec_STR_fixed.nc: '{{ dir.data }}/INPUT/wind_atm_fin_ch_time_vec_STR_fixed.nc'
     hgrid.gr3: '{{ dir.data }}/hgrid.gr3'
     hgrid.ll: '{{ dir.data }}/hgrid.ll'
     vgrid.in: '{{ dir.data }}/vgrid.in'
@@ -122,12 +124,9 @@ cdeps:
         readmode: single
         dtlimit: 1.5
         stream_offset: 0
-        yearAlign: 2024
-        yearFirst: 2024
-        yearLast: 2024
         stream_vectors: 'null'
         stream_lev_dimname: 'null'
-        stream_data_variables: [u10 Sa_u10m, v10 Sa_v10m, mslma Sa_pslv ]
+        stream_data_variables: [ u10 Sa_u10m, v10 Sa_v10m, mslma Sa_pslv ]
         data:
           protocol: herbie
           source: hrrr
@@ -140,8 +139,9 @@ cdeps:
 schism:
   hgrid: '{{ dir.data }}/hgrid.gr3'
   vgrid: '{{ dir.data }}/vgrid.in'
-  boundary_vars: [True, True, True]
-  ocean_bnd_ids: [0]
+  boundary:
+    vars: [True, True, True]
+    ids: [0]
   gr3:
     description: description
     albedo: 2.0e-1
@@ -150,7 +150,7 @@ schism:
     manning: 2.5e-2
   bctides:
     mode: tidal
-    constituents: ['Q1','O1','P1','K1','N2','M2','S2','K2','Mm','Mf','M4','MN4','MS4','2N2','S1']  
+    constituents: [ 'Q1','O1','P1','K1','N2','M2','S2','K2','Mm','Mf','M4','MN4','MS4','2N2','S1' ]  
     database: 'tpxo'
     earth_tidal_potential: true
     cutoff_depth: 40
@@ -159,5 +159,4 @@ schism:
   namelist:
     template_file: ../templates/param.nml
     template_values:
-      rnday: 1
       dt: 200

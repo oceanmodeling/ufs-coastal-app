@@ -25,20 +25,6 @@
         "vgrid": {
           "type": "string"
         },
-        "boundary_vars": {
-          "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
-          "items": {
-            "type": "boolean"
-          }
-        },
-        "ocean_bnd_ids": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        },
         "gr3": {
           "additionalProperties": false,
           "properties": {
@@ -164,6 +150,30 @@
           ],
           "type": "object"
         },
+        "boundary": {
+          "additionalProperties": false,
+          "properties": {
+            "vars": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "vars",
+            "ids"
+          ],
+          "type": "object"
+        },
         "rundir": {
           "type": "string"
         }
@@ -172,10 +182,7 @@
         "namelist",
         "rundir",
         "hgrid",
-        "vgrid",
-        "boundary_vars",
-        "ocean_bnd_ids",
-        "bctides"
+        "vgrid"
       ],
       "type": "object"
     }
