@@ -6,7 +6,7 @@ The [model-level repo](https://github.com/oceanmodeling/ufs-weather-model) conta
 Here, model component means a forecast component (e.g. coastal ocean model) that represents a physical domain (e.g. Atlantic Ocean) or process (e.g. biogeochemistry). An application is a workflow that is designed for a particular forecasting purpose. A workflow consists of a set of model components and coupling infrastructure, provided by UFS Coastal Model, pre- and post-processing scripts, and is associated with a range of valid coupling configurations. 
 
 # Where to find more information 
-* [Documentation](https://oceanmodeling.github.io/ufs-coastal-app/versions/main/html/index.html)  (in development)
+* [Documentation](https://ufs-coastal-application.readthedocs.io/en/latest/index.html) (in development)
 * [UFS Coastal Wiki](https://github.com/oceanmodeling/ufs-weather-model/wiki/) 
 * [UFS Coastal Discussions Board](https://github.com/oceanmodeling/ufs-weather-model/discussions)
 * [UFS Community Discussions](https://github.com/orgs/ufs-community/discussions)
