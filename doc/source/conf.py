@@ -21,7 +21,6 @@ import os
 import sys
 
 # Note that we need a specific version of sphinx_rtd_theme. This can be obtained with:
-# pip install git+https://github.com/esmci/sphinx_rtd_theme.git@version-dropdown-with-fixes
 import sphinx_rtd_theme
 
 # -- General configuration ------------------------------------------------
@@ -61,7 +60,7 @@ main_doc = "index"
 # General information about the project.
 project = "UFS Coastal Application"
 # pylint: disable=redefined-builtin
-copyright = "2023, NOS Storm Surge Modeling Team"
+copyright = "2025, NOS Storm Surge Modeling Team"
 author = "Staff of the NOS Storm Surge Modeling Team"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -109,9 +108,9 @@ html_theme = "sphinx_rtd_theme"
 # names to html links. The current version can link to the current location (i.e., do
 # nothing). For the other version, we just add a place-holder; its name and value are
 # unimportant because these versions will get replaced dynamically.
-html_theme_options = {}
-html_theme_options["versions"] = {version: ""}
-html_theme_options["versions"]["[placeholder]"] = ""
+#html_theme_options = {}
+#html_theme_options["versions"] = {version: ""}
+#html_theme_options["versions"]["[placeholder]"] = ""
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

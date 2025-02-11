@@ -1,0 +1,194 @@
+{
+  "properties": {
+    "schism": {
+      "additionalProperties": false,
+      "properties": {
+        "namelist": {
+          "additionalProperties": false,
+          "properties": {
+            "template_file": {
+              "type": "string"
+            },
+            "template_values": {
+              "minProperties": 1,
+              "type": "object"
+            }
+          },
+          "required": [
+            "template_file"
+          ],
+          "type": "object"
+        },
+        "hgrid": {
+          "type": "string"
+        },
+        "vgrid": {
+          "type": "string"
+        },
+        "gr3": {
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "albedo": {
+              "type": "number"
+            },
+            "diffmin": {
+              "type": "number"
+            },
+            "diffmax": {
+              "type": "number"
+            },
+            "watertype": {
+              "type": "number"
+            },
+            "windrot_geo2proj": {
+              "type": "number"
+            },
+            "manning": {
+              "type": "number"
+            }
+          }
+        },
+        "bctides": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": [
+                "tidal",
+                "time-elev"
+              ]
+            },
+            "constituents": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "database": {
+              "enum": [
+                "tpxo",
+                "fes2014"
+              ]
+            },
+            "earth_tidal_potential": {
+              "type": "boolean"
+            },
+            "cutoff_depth": {
+              "type": "number"
+            },
+            "elevation_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "discharge_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "relaxation_inflow": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "relaxation_outflow": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "temperature_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "temperature_nudging": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "salinity_values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "salinity_nudging": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "bc_type": {
+              "type": "number"
+            },
+            "elev_th": {
+              "type": "string"
+            },
+            "elev_source": {
+              "enum": [
+                "timeseries",
+                "hycom"
+              ]
+            },
+            "additional_flags": {
+              "type": "string"
+            },
+            "tpxo_dir": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "bc_type"
+          ],
+          "type": "object"
+        },
+        "boundary": {
+          "additionalProperties": false,
+          "properties": {
+            "vars": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "vars",
+            "ids"
+          ],
+          "type": "object"
+        },
+        "rundir": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namelist",
+        "rundir",
+        "hgrid",
+        "vgrid"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schism"
+  ],
+  "type": "object"
+}

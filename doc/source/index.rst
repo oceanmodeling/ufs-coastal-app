@@ -21,4 +21,5 @@ Table of contents
    Introduction.rst
    BuildingAndRunning.rst
    Configurations.rst
+   Workflow.rst
    PortingModel.rst

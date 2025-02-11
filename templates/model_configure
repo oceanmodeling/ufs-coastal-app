@@ -1,0 +1,10 @@
+start_year:   {{ start_year }}
+start_month:  {{ start_month }}
+start_day:    {{ start_day }}
+start_hour:   {{ start_hour }}
+start_minute: 0
+start_second: 0
+nhours_fcst:  {{ nhours_fcst}}
+dt_atmos:     0
+fhrot:        0 
+restart_fh:   0

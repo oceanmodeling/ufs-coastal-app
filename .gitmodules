@@ -5,4 +5,4 @@
 [submodule "sorc/uwtools"]
   path = sorc/uwtools
   url = https://github.com/oceanmodeling/uwtools.git
-  branch = main
+  branch = feature/cdeps

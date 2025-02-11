@@ -21,18 +21,18 @@ The ROMS input files for pre-configured cases can be downloaded from the `ROMS T
 .. todo::
    Need to place UFS Coastal specific data to cloud or common place along with some level of versioning.
 
-================================
-Downloading the UFS Coastal Code
-================================
+=================================
+Downloading the UFS Coastal Model
+=================================
 
-To clone the main branch of the ``ufs-coastal`` repository and update its submodules, execute the following commands:
+To clone the main branch of the ``ufs-weather-model`` repository that includes UFS Coastal specific model component and update its submodules, execute the following commands:
 
 .. code-block:: console
 
-   git clone --recursive https://github.com/oceanmodeling/ufs-coastal ufs-coastal
-   cd ufs-coastal
+   git clone --recursive https://github.com/oceanmodeling/ufs-weather-model
+   cd ufs-weather-model
 
-Compiling the model will take place within the ``ufs-coastal`` directory created by this command.
+Compiling the model will take place within the ``ufs-weather-model`` directory created by this command.
 
 ========================
 Building the UFS Coastal
@@ -47,11 +47,11 @@ The process for loading modules is fairly straightforward on Level 1 `supported 
 On NOAA Level 1 & 2 Systems
 ---------------------------
 
-Modulefiles for preconfigured platforms are located in ``modulefiles/ufs_<platform>.<compiler>``. For example, to load the modules from the ``ufs-coastal`` directory on MSU's Hercules:
+Modulefiles for preconfigured platforms are located in ``modulefiles/ufs_<platform>.<compiler>``. For example, to load the modules from the ``ufs-weather-model`` directory on MSU's Hercules:
 
 .. code-block:: console
 
-   cd ufs-coastal
+   cd ufs-weather-model
    module use modulefiles
    module load ufs_hercules.intel
 
@@ -104,7 +104,11 @@ DATM+OCN Configurations
    export CMAKE_FLAGS="-DAPP=CSTLS -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON"
 
 .. note::
-   The ``-DBUILD_TOOLS`` option can be also provided to build SCHISM specific pre- and post-processing tools.
+   The ``-DBUILD_UTILS=ON`` option can be also provided to build SCHISM specific pre- and post-processing tools.
+   The ``-DUSE_WW3=ON``  option can be also provided to couple with WW3 wave model.
+
+DATM+WAV Configurations
+-----------------------
 
 **WW3**
 
@@ -115,11 +119,18 @@ DATM+OCN Configurations
 .. note::
    The same options can be used both for standalone WW3 configuration (``standalone = true`` option needs to be provided in ``WAV_attributes`` section of ``ufs.configuration`` namelist file) and also the one coupled with CDEPS data atmosphere.
 
+
 DATM+OCN+WAV Configurations
 ---------------------------
 
-.. todo::
-   Add other configurations.
+**SCHISM**
+
+.. code-block:: console
+
+   export CMAKE_FLAGS="-DAPP=CSTLSW -DUSE_ATMOS=ON -DUSE_WW3=ON -DNO_PARMETIS=OFF -DOLDIO=ON -DPDLIB=ON"
+
+.. note::
+   The ``-DBUILD_UTILS=ON`` option can be also provided to build SCHISM specific pre- and post-processing tools.
 
 ------------------
 Building the Model
@@ -127,15 +138,15 @@ Building the Model
 
 The UFS Weather Model uses the CMake build system. There is a build script called ``build.sh`` in the top-level directory of the UFS Coastal repository that configures the build environment and runs the ``make`` command. This script also checks that all necessary environment variables have been set.
 
-The UFS Coastal can be built by running the following command from the ``ufs-coastal`` directory once ``CMAKE_FLAGS`` is set:
+The UFS Coastal can be built by running the following command from the ``ufs-weather-model`` directory once ``CMAKE_FLAGS`` is set:
 
 .. code-block:: console
 
    ./build.sh
 
-Once ``build.sh`` is finished, users should see the executable, named ``ufs_model``, in the ``ufs-coastal/build/`` directory. If users prefer to build in a different directory, specify the ``BUILD_DIR`` environment variable. For example: ``export BUILD_DIR=test_cpld`` will build in the ``ufs-coastal/test_cpld`` directory instead.
+Once ``build.sh`` is finished, users should see the executable, named ``ufs_model``, in the ``ufs-weather-model/build/`` directory. If users prefer to build in a different directory, specify the ``BUILD_DIR`` environment variable. For example: ``export BUILD_DIR=test_cpld`` will build in the ``ufs-weather-model/test_cpld`` directory instead.
 
-Expert help is available through `GitHub Discussions <https://github.com/oceanmodeling/ufs-coastal/discussions/categories/q-a>`_. Users may post questions there for help with difficulties related to the UFS Coastal.
+Expert help is available through `GitHub Discussions <https://github.com/oceanmodeling/ufs-weather-model/discussions/categories/q-a>`_. Users may post questions there for help with difficulties related to the UFS Coastal.
 
 =================
 Running the Model
@@ -221,7 +232,7 @@ To display detailed information on how to use ``rt.sh``, users can simply run ``
 
 .. code-block:: console
 
-   Usage: ./rt.sh -a <account> | -b <file> | -c | -d | -e | -h | -k | -l <file> | -m | -n <name> | -r | -w
+   Usage: ./rt.sh -a <account> | -b <file> | -c | -d | -e | -h | -k | -l <file> | -m | -n <name> | -o | -r | -v | -w
    
      -a  <account> to use on for HPC queue
      -b  create new baselines only for tests listed in <file>
@@ -233,7 +244,9 @@ To display detailed information on how to use ``rt.sh``, users can simply run ``
      -l  runs test specified in <file>
      -m  compare against new baseline results
      -n  run single test <name>
+     -o  compile only, skip tests
      -r  use Rocoto workflow manager
+     -v  verbose output
      -w  for weekly_test, skip comparing baseline results
 
 When running a large number (10's or 100's) of tests, the ``-e`` or ``-r`` options can significantly decrease testing time by using a workflow manager (ecFlow or Rocoto, respectively) to queue the jobs 
@@ -255,7 +268,11 @@ To run a single test from custom configuration file:
 
 .. code-block:: console
 
-   ./rt.sh -l rt_coastal.conf -k -n coastal_irene_atm2roms
+   Running with Intel compiler:
+   ./rt.sh -l rt_coastal.conf -k -n "coastal_irene_atm2roms intel"
+
+   Running with GNU compiler:
+   ./rt.sh -l rt_coastal.conf -k -n "coastal_irene_atm2roms gnu"
 
 .. note::
    ``-k`` argument is used to keep the run directory for further reference.
@@ -263,5 +280,5 @@ To run a single test from custom configuration file:
 .. note::
    ``-a`` argument can be used to specify account to job scheduler
 
-The up-to-date list of supported and tested (the RTs that is indicated as bold) RTs can be seen in `UFS Coastal repository Wiki page <https://github.com/oceanmodeling/ufs-coastal/wiki/Current-Status-of-UFS%E2%80%90Coastal-Implementation>`_.
+The up-to-date list of supported and tested (the RTs that is indicated as bold) RTs can be seen in `UFS Coastal specific UFS WM fork repository Wiki page <https://github.com/oceanmodeling/ufs-weather-model/wiki/Current-Status-of-UFS%E2%80%90Coastal-Implementation>`_.
 

@@ -1,0 +1,154 @@
+dir:
+  app: "{{ 'PWD' | env }}/.."
+  run: run
+  data: /work2/noaa/stmp/tufuk/stmp/tufuk/FV3_RT/rt_2645249/coastal_ike_shinnecock_atm2sch_intel
+platform:
+  account: nems
+  scheduler: slurm
+coastal:
+  execution:
+    batchargs:
+      cores: 6
+      export: NONE
+      jobname: atm2sch
+      stderr: err
+      stdout: out
+      partition: hercules
+      queue: batch
+      walltime: '00:30:00'
+    envcmds:
+      - module use {{ dir.app }}/sorc/ufs-weather-model/modulefiles
+      - module load ufs_hercules.intel
+      - export ESMF_RUNTIME_PROFILE=ON
+      - export ESMF_RUNTIME_PROFILE_OUTPUT="SUMMARY"
+    executable: "{{ dir.app }}/install/bin/ufs_model"
+    mpiargs:
+      - '--export=ALL'
+    mpicmd: srun
+  links:
+    fd_ufs.yaml: '{{ dir.app }}/sorc/ufs-weather-model/tests/parm/fd_ufs.yaml'
+    hgrid.gr3: '{{ dir.data }}/hgrid.gr3'
+    hgrid.ll: '{{ dir.data }}/hgrid.ll'
+    vgrid.in: '{{ dir.data }}/vgrid.in'
+  rundir: '{{ dir.run }}'
+nuopc:
+  driver:
+    componentList: [ATM, OCN, MED]
+    runSequence: |
+      @3600
+        ATM -> MED :remapMethod=redist
+        MED med_phases_post_atm
+        OCN -> MED :remapMethod=redist
+        MED med_phases_post_ocn
+        MED med_phases_prep_atm
+        MED med_phases_prep_ocn_accum
+        MED med_phases_prep_ocn_avg
+        MED -> ATM :remapMethod=redist
+        MED -> OCN :remapMethod=redist
+        ATM
+        OCN
+        MED med_phases_history_write
+        MED med_phases_restart_write
+      @
+    attributes:
+      Verbosity: low  
+    allcomp:
+      attributes:
+        ScalarFieldCount: 3
+        ScalarFieldIdxGridNX: 1
+        ScalarFieldIdxGridNY: 2
+        ScalarFieldIdxNextSwCday: 3
+        ScalarFieldName: cpl_scalars
+        start_type: startup
+        restart_dir: RESTART/
+        case_name: ufs.cpld
+        restart_n: 12
+        restart_option: nhours
+        restart_ymd: -999
+        orb_eccen: 1.e36
+        orb_iyear: 2000
+        orb_iyear_align: 2000
+        orb_mode: fixed_year
+        orb_mvelp: 1.e36
+        orb_obliq: 1.e36
+        stop_n: 24
+        stop_option: nhours
+        stop_ymd: -999
+  med:
+    model: cmeps
+    petlist_bounds: 0-2
+    omp_num_threads: 1
+    attributes:
+      history_n: 1
+      history_option: nsteps
+      history_ymd: -999
+      coupling_mode: coastal
+  atm:
+    model: datm
+    petlist_bounds: 0-2
+    omp_num_threads: 1
+    attributes:
+      Verbosity: 0
+      DumpFields: false
+      ProfileMemory: false
+      OverwriteSlice: true
+  ocn:
+    model: schism
+    petlist_bounds: 3-5
+    omp_num_threads: 1
+    attributes:
+      Verbosity: 0
+      DumpFields: false
+      ProfileMemory: false
+      OverwriteSlice: true
+      meshloc: element
+      CouplingConfig: none
+cdeps:
+  datm:
+    update_values:
+      datm_nml:
+        datamode: ATMMESH
+        export_all: true
+        factorfn_data: 'null'
+        factorfn_mesh: 'null'
+        flds_co2: false
+        flds_presaero: false
+        flds_wiso: false
+        iradsw: 1
+        restfilm: 'null'
+    streams:
+      stream01:
+        stream_data_variables: [ u10 Sa_u10m, v10 Sa_v10m, mslma Sa_pslv ]
+        data:
+          protocol: herbie
+          source: hrrr
+          length: 24 
+          fxx: 0
+          subset: true
+          combine: false
+          target_directory: 'INPUT'
+  template_file: ../templates/cdeps.streams
+schism:
+  hgrid: '{{ dir.data }}/hgrid.gr3'
+  vgrid: '{{ dir.data }}/vgrid.in'
+  boundary:
+    vars: [True, True, True]
+    ids: [0]
+  gr3:
+    description: description
+    albedo: 2.0e-1
+    watertype: 4
+    windrot_geo2proj: 0.0
+    manning: 2.5e-2
+  bctides:
+    mode: tidal
+    constituents: [ 'Q1','O1','P1','K1','N2','M2','S2','K2','Mm','Mf','M4','MN4','MS4','2N2','S1' ]  
+    database: 'tpxo'
+    earth_tidal_potential: true
+    cutoff_depth: 40
+    bc_type: 3
+    tpxo_dir: /work/noaa/nosofs/mjisan/pyschism-main/PySCHISM_tutorial/data/TPXO
+  namelist:
+    template_file: ../templates/param.nml
+    template_values:
+      dt: 200
