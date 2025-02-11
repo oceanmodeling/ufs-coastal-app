@@ -109,6 +109,9 @@ This section includes step-by-step information to install workflow and its depen
    conda build recipe -c conda-forge --override-channels
    conda install -c ../../python/envs/myenv/conda-bld uwtools
 
+.. note::
+   The specific version of the uwtools can be also installed using ``conda build recipe/meta.yaml`` and ``conda install uwtools-2.5.1-py_0.tar.bz2`` commands. In this case, ``uwtools-2.5.1-py_0.tar.bz2`` the location of the compressed file would be under Python environment directory which is created using ``conda create --prefix`` command. The user also needs to install the dependencies manually using ``conda install f90nml iotaa=0.8.3 libxslt lxml`` command.
+
 Then, additional Python modules that is required by the workflow can be installed with following commands,
 
 .. code-block:: console
@@ -332,6 +335,58 @@ In this case, ``cdeps/datm/update_values/datm_nml`` section provides configurati
 
 .. note::
    The ``cdeps/datm/streams`` section might include multiple streams named as ``stream01``, ``stream02``, ... and each one might provide different information to the parent data component (``datm`` in this example). The ``cdeps`` section could also have multiple data components such as ``datm`` and ``docn``. More information about CDEPS related configuration options can be found in the `CDEPS documentation <https://escomp.github.io/CDEPS/versions/master/html/index.html>`_.
+
+The existing workflow implementation also allows to assign defaults for CDEPS configuration options. The following table includes the list of options and their default values if there is.
+
+.. list-table:: CDEPS related configuration options
+   :widths: 10 25 50 50 50
+   :header-rows: 1
+
+   * - Section in YAML
+     - Name
+     - Description
+     - Default value
+     - Valid values
+   * - stream0[1-9]
+     - taxmode
+     - It specifies how to handle data outside the specified stream time axis
+     - limit
+     - extend, cycle, limit
+   * - stream0[1-9]
+     - mapalgo
+     - Specifies spatial interpolation algorithm to map stream data on stream mesh to stream data on model mesh
+     - redist
+     - redist, nn, bilinear, consd, consf
+   * - stream0[1-9]
+     - tinterpalgo
+     - Specifies time interpolation algorithm option
+     - linear
+     - lower, upper, nearest, linear, coszen
+   * - stream0[1-9]
+     - readmode
+     - Specifies data stream read mode
+     - single
+     - single, full_file
+   * - stream0[1-9]
+     - dtlimit
+     - Specifies delta time ratio limits placed on the time interpolation associated with the array of streams
+     - 1.5
+     - The limit might need to be set to a value greater than 1.0 due to the round-off arithmetic
+   * - stream0[1-9]
+     - stream_offset
+     - The offset allows a user to shift the time axis of a data stream by a fixed and constant number of seconds. 
+     - 0
+     - Any valid number. Note that a positive offset advances the input data time axis forward by that number of seconds
+   * - stream0[1-9]
+     - stream_vectors
+     - Specifies paired vector field names that will be rotated to make them relative to earth coordinates using source mesh coordinates
+     - null
+     - Value pair like "Sa_u:Sa_v"
+   * - stream0[1-9]
+     - stream_lev_dimname
+     - Specifies name of vertical dimension in stream
+     - null
+     - Only required for 3d fields
 
 Each stream (like ``stream01``) might include section like ``data`` to specify data specific configuration options. In this example, the data will be retrieved vy using Herbie Python module which could able to access and download different data sets. In the initial implementation of the workflow the ``source`` of the dataset for Herbie can be defined as ``hrrr`` or ``gfs``. The ``length`` is used to define lenght of the data that will be retrieved from the defined source endpoint while ``fxx`` is used to define forecast lead time of the selected data set in hours. More information about Herbie module can be found in its `documentation <https://herbie.readthedocs.io/en/stable/index.html>`_. Since selected dataset might cover bigger area than the actual simulation domain, the workflow provides a way to subset the data spatially to reduce the file sizes. The ``subset`` option can be used for this purpose and workflow trim the dataset based on given SCHISM grid file and combines them to a single file if ``combine`` option is set to true. The ``target_directory`` defined the local folder under run directory to place the forcing files.
 

@@ -4,22 +4,26 @@
 {% endfor -%}
 stream_info: {{ stream_info | join(' ') }}
 {% for key, val in streams.items() %}
-taxmode{{'%02d' % loop.index}}: {{ val['taxmode'] }}
-mapalgo{{'%02d' % loop.index}}: {{ val['mapalgo'] }} 
-tInterpAlgo{{'%02d' % loop.index}}: {{ val['tinterpalgo'] }}
-readMode{{'%02d' % loop.index}}: {{ val['readmode'] }}
-dtlimit{{'%02d' % loop.index}}: {{ val['dtlimit'] }}
-stream_offset{{'%02d' % loop.index}}: {{ val['stream_offset'] }}
+taxmode{{'%02d' % loop.index}}: {{ val['taxmode'] | default("limit", true) }}
+mapalgo{{'%02d' % loop.index}}: {{ val['mapalgo'] | default("redist", true) }} 
+tInterpAlgo{{'%02d' % loop.index}}: {{ val['tinterpalgo'] | default("linear", true) }}
+readMode{{'%02d' % loop.index}}: {{ val['readmode'] | default("single", true) }}
+dtlimit{{'%02d' % loop.index}}: {{ val['dtlimit'] | default(1.5, true) }}
+stream_offset{{'%02d' % loop.index}}: {{ val['stream_offset'] | default(0, true) }}
 yearFirst{{'%02d' % loop.index}}: {{ val['yearFirst'] }}
 yearLast{{'%02d' % loop.index}}: {{ val['yearLast'] }}
 yearAlign{{'%02d' % loop.index}}: {{ val['yearAlign'] }}
+{% if 'stream_vectors' in val %}
 {% if val['stream_vectors'] is string -%}
 stream_vectors{{'%02d' % loop.index}}: {{ val['stream_vectors'] }}
 {% else -%}
 stream_vectors{{'%02d' % loop.index}}: "{{ val['stream_vectors'] | join(':') }}"
 {% endif -%}
+{% else -%}
+stream_vectors: "null"
+{% endif -%}
 stream_mesh_file{{'%02d' % loop.index}}: {{ val['stream_mesh_file'] }}
-stream_lev_dimname{{'%02d' % loop.index}}: {{ val['stream_lev_dimname'] }}
+stream_lev_dimname{{'%02d' % loop.index}}: {{ val['stream_lev_dimname'] | default('"null"', true) }}
 {% if val['stream_data_files'] | length > 1 -%}
 stream_data_files{{'%02d' % loop.index}}: ""{{ val['stream_data_files'] | join('" "') }}""
 {% else -%}

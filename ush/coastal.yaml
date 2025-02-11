@@ -118,14 +118,6 @@ cdeps:
         restfilm: 'null'
     streams:
       stream01:
-        taxmode: limit
-        mapalgo: redist
-        tinterpalgo: linear
-        readmode: single
-        dtlimit: 1.5
-        stream_offset: 0
-        stream_vectors: 'null'
-        stream_lev_dimname: 'null'
         stream_data_variables: [ u10 Sa_u10m, v10 Sa_v10m, mslma Sa_pslv ]
         data:
           protocol: herbie

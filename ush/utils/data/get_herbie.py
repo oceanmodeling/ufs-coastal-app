@@ -78,9 +78,12 @@ def download(config, cycle, bbox=[]):
     file_list = list(file_set)
     file_list.sort()
     if combine:
-        logging.info('List of files that will be combined: %s', ' '.join(map(str, file_list)))
-        ds = xr.open_mfdataset(file_list, combine='nested', concat_dim='time', coords='minimal', compat='override', engine='netcdf4')
-        ds.to_netcdf(config['stream_data_files'][0])
+        if not os.path.isfile(config['stream_data_files'][0]):
+            logging.info('List of files that will be combined: %s', ' '.join(map(str, file_list)))
+            ds = xr.open_mfdataset(file_list, combine='nested', concat_dim='time', coords='minimal', compat='override', engine='netcdf4')
+            ds.to_netcdf(config['stream_data_files'][0])
+        else:
+            logging.info('Skip combining files since %s is already created.', config['stream_data_files'][0])
 
 def get(date, source, fxx, bbox, overwrite, output_dir):
     # Create object

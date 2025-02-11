@@ -125,14 +125,6 @@ cdeps:
         ny_global: 101
     streams:
       stream01:
-        taxmode: limit
-        mapalgo: redist
-        tinterpalgo: linear
-        readmode: single
-        dtlimit: 1.5
-        stream_offset: 0
-        stream_vectors: 'null'
-        stream_lev_dimname: 'null'
         stream_data_variables: ["uwnd Sa_u10m", "vwnd Sa_v10m", "P Sa_pslv"]
         stream_mesh_file: INPUT/wind_atm_fin_ch_time_vec_ESMFmesh.nc
         stream_data_files: [INPUT/wind_atm_fin_ch_time_vec_STR_fixed.nc]
