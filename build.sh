@@ -17,6 +17,8 @@ OPTIONS
   --build-type=BUILD_TYPE
       build type; defaults to RELEASE
       (e.g. DEBUG | RELEASE | RELWITHDEBINFO)
+  --cmake-settings=CMAKE_SETTINGS
+      Additional CMake settings provided by user
   --clean
       does a "make clean"
   -c, --compiler=COMPILER
@@ -63,18 +65,19 @@ settings () {
 cat << EOF_SETTINGS
 Settings:
 
-  APP=${APPLICATION}
-  APP_DIR=${APP_DIR}
-  BIN_DIR=${BIN_DIR}
-  BUILD_DIR=${BUILD_DIR}
-  BUILD_JOBS=${BUILD_JOBS}
-  BUILD_TYPE=${BUILD_TYPE}
-  CLEAN=${CLEAN}
-  COMPILER=${COMPILER}
-  INSTALL_DIR=${INSTALL_DIR}
-  PLATFORM=${PLATFORM}
-  REMOVE=${REMOVE}
-  VERBOSE=${VERBOSE}
+  APP = ${APPLICATION}
+  APP_DIR = ${APP_DIR}
+  BIN_DIR = ${BIN_DIR}
+  BUILD_DIR = ${BUILD_DIR}
+  BUILD_JOBS = ${BUILD_JOBS}
+  BUILD_TYPE = ${BUILD_TYPE}
+  CLEAN = ${CLEAN}
+  CMAKE_SETTINGS = ${CMAKE_SETTINGS}
+  COMPILER = ${COMPILER}
+  INSTALL_DIR = ${INSTALL_DIR}
+  PLATFORM = ${PLATFORM}
+  REMOVE = ${REMOVE}
+  VERBOSE = ${VERBOSE}
 
 EOF_SETTINGS
 }
@@ -111,6 +114,8 @@ while :; do
     --build-jobs=?*) BUILD_JOBS=$((${1#*=})) ;;
     --build-jobs|--build-jobs=) usage_error "$1 requires argument." ;;
     --clean) CLEAN=true ;;
+    --cmake-settings=?*) CMAKE_SETTINGS=${1#*=} ;;
+    --cmake-settings|--cmake-settings=) usage_error "$1 requires argument." ;;
     --compiler=?*|-c=?*) COMPILER=${1#*=} ;;
     --compiler|--compiler=|-c|-c=) usage_error "$1 requires argument." ;;
     --help|-h) usage; exit 0 ;;
@@ -166,7 +171,8 @@ fi
 CMAKE_SETTINGS="\
  -DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
  -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}\
- -DCMAKE_INSTALL_BINDIR=${BIN_DIR}"
+ -DCMAKE_INSTALL_BINDIR=${BIN_DIR}\
+ ${CMAKE_SETTINGS}"
 
 if [ ! -z "${APPLICATION}" ]; then
   CMAKE_SETTINGS="${CMAKE_SETTINGS} -DAPP=${APPLICATION}"
@@ -183,7 +189,7 @@ if [ ! -z "${APPLICATION}" ]; then
     CMAKE_SETTINGS="${CMAKE_SETTINGS} -DMY_CPP_FLAGS=BULK_FLUXES" 
   # schism
   elif [ "${APPLICATION}" == "CSTLS" ]; then
-    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON -DBUILD_UTILS=ON"
+    CMAKE_SETTINGS="${CMAKE_SETTINGS} -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON -DBUILD_TOOLS=ON"
   fi
 fi
 

@@ -41,10 +41,10 @@ The application level build script (``build.sh``) mainly leverages build infrast
 .. code-block:: console
 
    Usage: ./build.sh --platform=PLATFORM [OPTIONS] ... [TARGETS]
-   
+
    OPTIONS
      -a, --app=APPLICATION
-         weather model application to build; for example, CSTLS for DATM+SCHISM
+         weather model application to build; for example, CSTLS for DATM+SCHISM 
      --bin-dir=BIN_DIR
          installation binary directory name ("bin" by default; any name is available)
      -b, --build-dir=BUILD_DIR
@@ -54,6 +54,8 @@ The application level build script (``build.sh``) mainly leverages build infrast
      --build-type=BUILD_TYPE
          build type; defaults to RELEASE
          (e.g. DEBUG | RELEASE | RELWITHDEBINFO)
+     --cmake-settings=CMAKE_SETTINGS
+         Additional CMake settings provided by user
      --clean
          does a "make clean"
      -c, --compiler=COMPILER
