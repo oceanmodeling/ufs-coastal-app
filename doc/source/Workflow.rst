@@ -100,33 +100,30 @@ MSU Hercules
 
 This section includes step-by-step information to install workflow and its dependencies using `Conda <https://docs.conda.io/en/latest/#>`_ and `pip <https://packaging.python.org/en/latest/tutorials/installing-packages/>`_ Python package managers on MSU's Hercules platform. The following commands can be used to create new Conda environment named as ``myenv`` under UFS Coastal Application source directory that includes ``uwtools`` module. More information about installing ``uwtools`` can be found in the following `link <https://uwtools.readthedocs.io/en/stable/sections/user_guide/installation.html>`_.
 
+* Install UWTools
+  
 .. code-block:: console
 
    cd ufs-coastal-app
    module load miniconda3/24.3.0
    conda create --prefix $PWD/python/envs/myenv
    conda activate $PWD/python/envs/myenv
-   conda install -c conda-forge --override-channels conda-build conda-verify
+   conda install -y -c conda-forge --override-channels conda-build conda-verify
    cd sorc/uwtools/
-   conda build recipe -c conda-forge --override-channels
-   conda install -c ../../python/envs/myenv/conda-bld uwtools
+   make package
+   conda install -c $CONDA_PREFIX/conda-bld -c conda-forge --override-channels uwtools=2.5.1
 
 .. note::
-   The specific version of the uwtools can be also installed using ``conda build recipe/meta.yaml`` and ``conda install uwtools-2.5.1-py_0.tar.bz2`` commands. In this case, ``uwtools-2.5.1-py_0.tar.bz2`` the location of the compressed file would be under Python environment directory which is created using ``conda create --prefix`` command. The user also needs to install the dependencies manually using ``conda install f90nml iotaa=0.8.3 libxslt lxml`` command.
+   ``conda search -c $CONDA_PREFIX/conda-bld --override-channels uwtools`` command can be used to verify local availability of the newly built package. More information about building uwtools locally can be found in its `user guide <https://uwtools.readthedocs.io/en/stable/sections/user_guide/installation.html#build-the-uwtools-package-locally>`_. 
 
-Then, additional Python modules that is required by the workflow can be installed with following commands,
+* Install Other Python Dependencies
+
+Additional Python modules that is required by the workflow can be installed with following commands,
 
 .. code-block:: console
    
-   conda install pip
-   conda install udunits2
-   conda install fiona
+   conda install -c conda-forge xarray dask netCDF4 bottleneck esmpy herbie-data boto3 pip udunits2 fiona
    pip install pyschism
-   
-   conda install -c conda-forge xarray dask netCDF4 bottleneck
-   conda install -c conda-forge esmpy
-   conda install -c conda-forge herbie-data
-   conda install -c conda-forge boto3
 
 .. note::
    ``udunits2`` and ``fiona`` Python modules are required by ``pyschism``.
