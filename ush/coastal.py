@@ -286,7 +286,6 @@ class Coastal(DriverCycleBased):
             config=refs(cdeps_cfg["cdeps-config"]),
             controller=[self.driver_name()],
             cycle=self.cycle,
-            schema_file="utils/cdeps/cdeps.jsonschema",
         )
         schism_cfg = self._schism_update_config(run_duration) 
         schism = SCHISM(
