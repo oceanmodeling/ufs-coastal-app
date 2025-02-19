@@ -98,35 +98,27 @@ To use `Unified Workflow Tools <https://uwtools.readthedocs.io/en/stable/>`_ and
 MSU Hercules
 ------------
 
-This section includes step-by-step information to install workflow and its dependencies using `Conda <https://docs.conda.io/en/latest/#>`_ and `pip <https://packaging.python.org/en/latest/tutorials/installing-packages/>`_ Python package managers on MSU's Hercules platform. The following commands can be used to create new Conda environment named as ``myenv`` under UFS Coastal Application source directory that includes ``uwtools`` module. More information about installing ``uwtools`` can be found in the following `link <https://uwtools.readthedocs.io/en/stable/sections/user_guide/installation.html>`_.
+This section includes step-by-step information to install workflow and its dependencies using `Conda <https://docs.conda.io/en/latest/#>`_ and `pip <https://packaging.python.org/en/latest/tutorials/installing-packages/>`_ Python package managers on MSU's Hercules platform. The following commands can be used to create new Conda environment named as ``coastal-app`` under UFS Coastal Application source directory that includes ``uwtools`` module. More information about installing ``uwtools`` can be found in the following `link <https://uwtools.readthedocs.io/en/stable/sections/user_guide/installation.html>`_.
+
+* Create Base Python Environment
+
+.. code-block:: console
+
+   cd ufs-coastal-app
+   module load miniconda3/24.3.0
+   conda env create -f environment.yml --prefix $PWD/python/envs/coastal-app
+   conda activate $PWD/python/envs/coastal-app
 
 * Install UWTools
   
 .. code-block:: console
 
-   cd ufs-coastal-app
-   module load miniconda3/24.3.0
-   conda create --prefix $PWD/python/envs/myenv
-   conda activate $PWD/python/envs/myenv
-   conda install -y -c conda-forge --override-channels conda-build conda-verify
    cd sorc/uwtools/
    make package
    conda install -c $CONDA_PREFIX/conda-bld -c conda-forge --override-channels uwtools=2.5.1
 
 .. note::
    ``conda search -c $CONDA_PREFIX/conda-bld --override-channels uwtools`` command can be used to verify local availability of the newly built package. More information about building uwtools locally can be found in its `user guide <https://uwtools.readthedocs.io/en/stable/sections/user_guide/installation.html#build-the-uwtools-package-locally>`_. 
-
-* Install Other Python Dependencies
-
-Additional Python modules that is required by the workflow can be installed with following commands,
-
-.. code-block:: console
-   
-   conda install -c conda-forge xarray dask netCDF4 bottleneck esmpy herbie-data boto3 pip udunits2 fiona
-   pip install pyschism
-
-.. note::
-   ``udunits2`` and ``fiona`` Python modules are required by ``pyschism``.
 
 The `pyschism <https://github.com/schism-dev/pyschism>`_ is used to pre-process SCHISM ocean model related input files while `Herbie <https://herbie.readthedocs.io/en/stable/index.html>`_ Python module is used to retrieve forcing files (i.e. `HRRR <https://rapidrefresh.noaa.gov/hrrr/>`_) that will be used by CDEPS Data Atmosphere to force the ocean model component. The rest of the Python modules are used to process forcing files to create `ESMF Mesh file <http://earthsystemmodeling.org/docs/nightly/develop/ESMF_refdoc/node3.html#SECTION03040000000000000000>`_, which is required by the CDEPS data component.
 
@@ -446,7 +438,6 @@ The UFS Coastal application level workflow, provides set of tools to generate na
       earth_tidal_potential: true
       cutoff_depth: 40
       bc_type: 3
-      tpxo_dir: /work/noaa/nosofs/mjisan/pyschism-main/PySCHISM_tutorial/data/TPXO
     namelist:
       template_file: ../templates/param.nml
       template_values:
@@ -521,6 +512,9 @@ In this case, the model configuration includes two model components (CDEPS and S
 
 .. note::
    To use GFS (Global Forecast System, 0.25 deg. global 6-hourly dataset) output as forcing, following changes need to be done in ``coastal.yaml`` workflow configuration file. (1) Set ``input/source`` to ``gfs``, and (2) set ``cdeps/atm_streams/streams/stream01/stream_data_variables`` to ``[u10 Sa_u10m, v10 Sa_v10m, prmsl Sa_pslv ]``.
+
+.. note::
+   The default DATM-SCHISM configuration uses tidal boundary conditions and TPXO dataset needs to be placed in ``$HOME/.local/share/tpxo`` directory before running the workflow to create required input file (``bctides.in``). The dataset can be also specified using ``TPXO_ELEVATION`` and ``TPXO_VELOCITY`` environment variables, which are set by the workflow using ``tpxo_dir`` configuration option but currently it is not working on some Python environments due to the bug in the `pyschism <https://github.com/schism-dev/pyschism/issues/146>`_ code. 
 
 Running Workflow
 ----------------

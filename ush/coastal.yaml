@@ -147,7 +147,6 @@ schism:
     earth_tidal_potential: true
     cutoff_depth: 40
     bc_type: 3
-    tpxo_dir: /work/noaa/nosofs/mjisan/pyschism-main/PySCHISM_tutorial/data/TPXO
   namelist:
     template_file: ../templates/param.nml
     template_values:
