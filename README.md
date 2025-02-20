@@ -6,8 +6,8 @@ The [model-level repo](https://github.com/oceanmodeling/ufs-weather-model) conta
 Here, model component means a forecast component (e.g. coastal ocean model) that represents a physical domain (e.g. Atlantic Ocean) or process (e.g. biogeochemistry). An application is a workflow that is designed for a particular forecasting purpose. A workflow consists of a set of model components and coupling infrastructure, provided by UFS Coastal Model, pre- and post-processing scripts, and is associated with a range of valid coupling configurations. 
 
 # Where to find more information 
-* [Documentation](https://ufs-coastal-application.readthedocs.io/en/latest/index.html) (in development)
-* [UFS Coastal Wiki](https://github.com/oceanmodeling/ufs-weather-model/wiki/) 
+* [Documentation](https://ufs-coastal-application.readthedocs.io/en/latest/index.html) (under construction!) 
+* [UFS Coastal Wiki](https://github.com/oceanmodeling/ufs-weather-model/wiki/) (under construction!) 
 * [UFS Coastal Discussions Board](https://github.com/oceanmodeling/ufs-weather-model/discussions)
 * [UFS Community Discussions](https://github.com/orgs/ufs-community/discussions)
 * [UFS Community Wiki](https://github.com/ufs-community/ufs/wiki)
@@ -50,11 +50,10 @@ Ali Salimi (ali.salimi@noaa.gov)\
 Ali Abdolali (Ali.Abdolali@erdc.dren.mil)
 
 **NOAA NOS dev team**\
-Panagiotis Velissariou (panagiotis.velissariou@noaa.gov)\
-Jana Haddad (jana.haddad@noaa.gov)\
-Yunfang Sun (yunfang.sun@noaa.gov)\
 Saeed Moghimi (saeed.moghimi@noaa.gov)\
-Armaghan Abed-Elmdoust (armaghan.abed-elmdoust@noaa.gov)	
+Mansur Jisan (mansur.jisan@noaa.gov)\
+Yunfang Sun (yunfang.sun@noaa.gov)\
+Jana Haddad (jana.haddad@noaa.gov)\
 
 **NCAR dev team**\
 Ufuk Turuncoglu (turuncu@ucar.edu)\
