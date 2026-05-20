@@ -12,6 +12,13 @@ Since the UFS Coastal is developed as a fork of the UFS Weather Model, the same 
 
 The prerequisite software libraries for building the UFS Coastal already exist in a centralized location on Level 1/pre configured systems, so users may skip dependency installation steps. On other systems, users will need to build the prerequisite libraries using `spack-stack <https://github.com/JCSDA/spack-stack>`_. The extensive documentation about installing dependencies through the spack-stack can be found in `here <https://spack-stack.readthedocs.io/en/latest/>`_.
 
+=====================
+Unsupported Platforms
+=====================
+
+For a complete walkthrough of Containerized EPIC Spack-Stack 1.6.0 for UFS Coastal on local and unsupported clusters (e.g., TACC Stampede3), see :ref:`Running UFS Coastal on HPCs with Spack-Stack <container_hpc_section>` for full instructions.
+
+
 ========
 Get Data
 ========
@@ -281,4 +288,169 @@ To run a single test from custom configuration file:
    ``-a`` argument can be used to specify account to job scheduler
 
 The up-to-date list of supported and tested (the RTs that is indicated as bold) RTs can be seen in `UFS Coastal specific UFS WM fork repository Wiki page <https://github.com/oceanmodeling/ufs-weather-model/wiki/Current-Status-of-UFS%E2%80%90Coastal-Implementation>`_.
+
+
+
+.. _container_hpc_section:
+
+Running UFS Coastal on HPCs with the Containerized EPIC Spack-Stack 1.6.0 Environment
+=====================================================================================
+
+
+This guide provides step-by-step instructions to compile and run the UFS Coastal Application on unsupported platforms (e.g., local machines, new HPC systems) using the EPIC Spack-Stack containerized environment (v1.6.0). It involves launching a container (via Apptainer or Singularity), building the UFS model, externalizing the executable, and running test cases outside the container.
+
+Two workflow options are provided:
+
+- **Option 1:** Build and run from inside the container.
+- **Option 2:** Extract modulefiles and build/run externally.
+
+Example commands are shown for Stampede3 (TACC), but they can be adapted to other systems.
+
+Prerequisites
+-------------
+
+- Apptainer or Singularity installed
+- HPC account with interactive compute access (`idev`, `srun`, etc.)
+- Familiarity with Git and environment module systems
+
+Download the Container Image
+----------------------------
+
+.. code-block:: bash
+
+   wget https://epic-noaa.s3.us-east-1.amazonaws.com/ubuntu22.04-intel-ufs-env-v1.6.0.img
+   export img=/path/to/ubuntu22.04-intel-ufs-env-v1.6.0.img
+
+Start an Interactive HPC Session (Stampede3 Example)
+----------------------------------------------------
+
+.. code-block:: bash
+
+   idev -m 120
+   ml tacc-apptainer/1.3.3
+
+Check Loaded Modules (Example Output)
+-------------------------------------
+
+.. code-block:: bash
+
+   ml list
+   # cmake/3.31.5, python/3.9.18, intel/24.0, netcdf/4.9.2, metis/5.1.0.3, tacc-apptainer/1.3.3, ...
+
+Option 1: Build and Run Inside the Container
+--------------------------------------------
+
+1. **Enter the container**
+
+   .. code-block:: bash
+
+      singularity shell -e -s /bin/bash $img
+      # Optional
+      Apptainer> source /usr/lmod/lmod/init/bash
+
+2. **Load UFS modules**
+
+   .. code-block:: bash
+
+      Apptainer> module use /opt/spack-stack/spack-stack-1.6.0/envs/unified-env/install/modulefiles/Core
+      Apptainer> module load stack-intel 
+      Apptainer> module load stack-intel-oneapi-mpi
+      Apptainer> module load ufs-weather-model-env
+      Apptainer> module list
+
+3. **Clone and build UFS Coastal**
+
+   .. code-block:: bash
+
+      Apptainer> git clone --recursive https://github.com/oceanmodeling/ufs-weather-model
+      Apptainer> cd ufs-weather-model
+      Apptainer> mkdir build && cd build
+      Apptainer> cmake -DAPP=CSTLS -DPDLIB=ON -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON -DUSE_WW3=OFF ..
+      Apptainer> make -j 8
+
+4. **Externalize the executable**
+
+   .. code-block:: bash
+
+      Apptainer> /opt/container-scripts/externalize.sh -e $PWD/extern $PWD/ufs_model
+      # Result: build/extern/ufs_model (wrapper executable)
+
+5. **Exit container and run externally**
+
+   .. code-block:: bash
+
+      Apptainer> exit
+      cd /path/to/test-case
+      ibrun -n 10 ../ufs-weather-model/build/extern/ufs_model
+      # or use srun/mpirun
+
+Option 2: Externalize Modulefiles and Build Outside the Container
+------------------------------------------------------------------
+
+1. **Create a modulefiles directory**
+
+   .. code-block:: bash
+
+      mkdir modulefiles
+      cd modulefiles
+
+2. **Extract modulefiles from the container**
+
+   .. code-block:: bash
+
+      singularity exec $img cp /opt/container-scripts/convert-modules.py .
+      python3 ./convert-modules.py -i $img -o $PWD/spack-stack-1.6.0
+
+3. **Load externalized modules**
+
+   .. code-block:: bash
+
+      module use /path/to/modulefiles/spack-stack-1.6.0/Core
+      module load stack-intel
+      module load stack-intel-oneapi-mpi
+      module load ufs-weather-model-env sp crtm
+      module list
+
+4. **Build UFS Coastal externally**
+
+   .. code-block:: bash
+
+      git clone --recursive https://github.com/oceanmodeling/ufs-weather-model
+      cd ufs-weather-model
+      mkdir build_external && cd build_external
+      cmake -DAPP=CSTLS -DPDLIB=ON -DUSE_ATMOS=ON -DNO_PARMETIS=OFF -DOLDIO=ON -DUSE_WW3=OFF ..
+      make -j 8
+
+5. **Create executable wrapper**
+
+   .. code-block:: bash
+
+      make-external ./ufs_model
+      # Generates ufs_model (wrapper) and ufs_model.orig (original binary)
+
+6. **Run test case externally**
+
+   .. code-block:: bash
+
+      cd /path/to/test-case
+      ibrun -n 10 ../ufs-weather-model/build_external/ufs_model
+
+Summary
+-------
+
+- **Option 1** builds inside the container and externalizes only the executable.
+- **Option 2** extracts environment modules and builds entirely outside the container.
+- Both approaches allow unsupported systems to run the UFS Coastal Application using the EPIC Spack-Stack container.
+
+Notes
+-----
+
+- Adjust `ibrun -n` or `srun` based on your platform and test case.
+- Replace `/path/to/test-case` with your actual directory.
+- This setup is portable to other clusters using Apptainer/Singularity (e.g., university or institutional HPCs).
+
+Acknowledgments
+---------------
+
+This workflow builds upon techniques shared during a NOAA workshop led by Mark Potts. It was adapted and extended to support UFS Coastal compilation and execution on Stampede3.
 
